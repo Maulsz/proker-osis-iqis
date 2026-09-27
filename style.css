@@ -26,30 +26,39 @@
   --info-light: #eff6ff;
 
   /* Palet Warna Divisi (Jadwal Program Kerja OSIS) */
-  --divisi-islam: #6366f1;
-  --divisi-islam-bg: rgba(99, 102, 241, 0.12);
-  --divisi-islam-border: rgba(99, 102, 241, 0.25);
-  --divisi-islam-text: #4338ca;
+  --divisi-keislaman: #d97706; /* Amber */
+  --divisi-keislaman-bg: rgba(217, 119, 6, 0.12);
+  --divisi-keislaman-border: rgba(217, 119, 6, 0.25);
+  --divisi-keislaman-text: #b45309;
+  --divisi-islam: var(--divisi-keislaman);
+  --divisi-islam-bg: var(--divisi-keislaman-bg);
+  --divisi-islam-border: var(--divisi-keislaman-border);
+  --divisi-islam-text: var(--divisi-keislaman-text);
 
-  --divisi-kepemimpinan: #3b82f6;
-  --divisi-kepemimpinan-bg: rgba(59, 130, 246, 0.12);
-  --divisi-kepemimpinan-border: rgba(59, 130, 246, 0.25);
-  --divisi-kepemimpinan-text: #1d4ed8;
+  --divisi-kepemimpinan: #7c3aed; /* Violet */
+  --divisi-kepemimpinan-bg: rgba(124, 58, 237, 0.12);
+  --divisi-kepemimpinan-border: rgba(124, 58, 237, 0.25);
+  --divisi-kepemimpinan-text: #6d28d9;
 
-  --divisi-media: #ec4899;
-  --divisi-media-bg: rgba(236, 72, 153, 0.12);
-  --divisi-media-border: rgba(236, 72, 153, 0.25);
-  --divisi-media-text: #be185d;
+  --divisi-media: #e11d48; /* Rose */
+  --divisi-media-bg: rgba(225, 29, 72, 0.12);
+  --divisi-media-border: rgba(225, 29, 72, 0.25);
+  --divisi-media-text: #be123c;
 
-  --divisi-wirausaha: #0d9488;
-  --divisi-wirausaha-bg: rgba(13, 148, 136, 0.12);
-  --divisi-wirausaha-border: rgba(13, 148, 136, 0.25);
-  --divisi-wirausaha-text: #0f766e;
+  --divisi-wirausaha: #0891b2; /* Cyan */
+  --divisi-wirausaha-bg: rgba(8, 145, 178, 0.12);
+  --divisi-wirausaha-border: rgba(8, 145, 178, 0.25);
+  --divisi-wirausaha-text: #0e7490;
 
-  --divisi-bersama: #64748b;
-  --divisi-bersama-bg: rgba(100, 116, 139, 0.12);
-  --divisi-bersama-border: rgba(100, 116, 139, 0.25);
-  --divisi-bersama-text: #334155;
+  --divisi-bersama: #78716c; /* Stone */
+  --divisi-bersama-bg: rgba(120, 113, 108, 0.12);
+  --divisi-bersama-border: rgba(120, 113, 108, 0.25);
+  --divisi-bersama-text: #57534e;
+
+  --divisi-lainnya: #64748b; /* Neutral Gray */
+  --divisi-lainnya-bg: rgba(100, 116, 139, 0.12);
+  --divisi-lainnya-border: rgba(100, 116, 139, 0.25);
+  --divisi-lainnya-text: #475569;
 
   /* Palet Netral (Slate) */
   --bg-main: #f8fafc;
@@ -118,30 +127,39 @@
   --info-light: rgba(96, 165, 250, 0.16);
 
   /* Palet Warna Divisi (Tema Gelap - Kontras Tinggi) */
-  --divisi-islam: #818cf8;
-  --divisi-islam-bg: rgba(99, 102, 241, 0.22);
-  --divisi-islam-border: rgba(129, 140, 248, 0.35);
-  --divisi-islam-text: #c7d2fe;
+  --divisi-keislaman: #f59e0b; /* Amber */
+  --divisi-keislaman-bg: rgba(245, 158, 11, 0.2);
+  --divisi-keislaman-border: rgba(245, 158, 11, 0.35);
+  --divisi-keislaman-text: #fde68a;
+  --divisi-islam: var(--divisi-keislaman);
+  --divisi-islam-bg: var(--divisi-keislaman-bg);
+  --divisi-islam-border: var(--divisi-keislaman-border);
+  --divisi-islam-text: var(--divisi-keislaman-text);
 
-  --divisi-kepemimpinan: #60a5fa;
-  --divisi-kepemimpinan-bg: rgba(59, 130, 246, 0.22);
-  --divisi-kepemimpinan-border: rgba(96, 165, 250, 0.35);
-  --divisi-kepemimpinan-text: #bfdbfe;
+  --divisi-kepemimpinan: #a78bfa; /* Violet */
+  --divisi-kepemimpinan-bg: rgba(167, 139, 250, 0.2);
+  --divisi-kepemimpinan-border: rgba(167, 139, 250, 0.35);
+  --divisi-kepemimpinan-text: #ddd6fe;
 
-  --divisi-media: #f472b6;
-  --divisi-media-bg: rgba(236, 72, 153, 0.22);
-  --divisi-media-border: rgba(244, 114, 182, 0.35);
-  --divisi-media-text: #fbcfe8;
+  --divisi-media: #fb7185; /* Rose */
+  --divisi-media-bg: rgba(251, 113, 133, 0.2);
+  --divisi-media-border: rgba(251, 113, 133, 0.35);
+  --divisi-media-text: #fecdd3;
 
-  --divisi-wirausaha: #2dd4bf;
-  --divisi-wirausaha-bg: rgba(13, 148, 136, 0.22);
-  --divisi-wirausaha-border: rgba(45, 212, 191, 0.35);
-  --divisi-wirausaha-text: #99f6e4;
+  --divisi-wirausaha: #22d3ee; /* Cyan */
+  --divisi-wirausaha-bg: rgba(34, 211, 238, 0.2);
+  --divisi-wirausaha-border: rgba(34, 211, 238, 0.35);
+  --divisi-wirausaha-text: #a5f3fc;
 
-  --divisi-bersama: #94a3b8;
-  --divisi-bersama-bg: rgba(100, 116, 139, 0.22);
-  --divisi-bersama-border: rgba(148, 163, 184, 0.35);
-  --divisi-bersama-text: #e2e8f0;
+  --divisi-bersama: #a8a29e; /* Stone */
+  --divisi-bersama-bg: rgba(168, 162, 158, 0.2);
+  --divisi-bersama-border: rgba(168, 162, 158, 0.35);
+  --divisi-bersama-text: #e7e5e4;
+
+  --divisi-lainnya: #94a3b8; /* Neutral Gray */
+  --divisi-lainnya-bg: rgba(148, 163, 184, 0.2);
+  --divisi-lainnya-border: rgba(148, 163, 184, 0.35);
+  --divisi-lainnya-text: #cbd5e1;
 
   /* Palet Netral (Slate Gelap Premium) */
   --bg-main: #0b0f19;
@@ -499,6 +517,35 @@ body.modal-open {
     transform: scale(0.95);
     opacity: 0.8;
   }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+  vertical-align: middle;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.btn-secondary .btn-spinner,
+.btn-outline .btn-spinner,
+.btn-outline-primary .btn-spinner {
+  border-color: rgba(16, 185, 129, 0.25);
+  border-top-color: var(--primary);
 }
 
 /* ==========================================================================
@@ -996,12 +1043,14 @@ button.btn-text:focus-visible,
 }
 
 /* Pewarnaan Titik Kalender Berdasarkan Divisi */
-.event-dot.divisi-islam {
-  background-color: var(--divisi-islam);
+.event-dot.divisi-islam,
+.event-dot.divisi-keislaman {
+  background-color: var(--divisi-keislaman);
 }
-.event-dot.divisi-islam.dot-tentative {
+.event-dot.divisi-islam.dot-tentative,
+.event-dot.divisi-keislaman.dot-tentative {
   background-color: transparent !important;
-  border-color: var(--divisi-islam) !important;
+  border-color: var(--divisi-keislaman) !important;
 }
 
 .event-dot.divisi-kepemimpinan {
@@ -1034,6 +1083,14 @@ button.btn-text:focus-visible,
 .event-dot.divisi-bersama.dot-tentative {
   background-color: transparent !important;
   border-color: var(--divisi-bersama) !important;
+}
+
+.event-dot.divisi-lainnya {
+  background-color: var(--divisi-lainnya);
+}
+.event-dot.divisi-lainnya.dot-tentative {
+  background-color: transparent !important;
+  border-color: var(--divisi-lainnya) !important;
 }
 
 .day-cell.selected .event-dot {
@@ -1216,8 +1273,9 @@ button.btn-text:focus-visible,
 }
 
 /* Indikator Border Divisi di Upcoming Items */
-.upcoming-item.border-divisi-islam {
-  border-left: 3.5px solid var(--divisi-islam);
+.upcoming-item.border-divisi-islam,
+.upcoming-item.border-divisi-keislaman {
+  border-left: 3.5px solid var(--divisi-keislaman);
 }
 .upcoming-item.border-divisi-kepemimpinan {
   border-left: 3.5px solid var(--divisi-kepemimpinan);
@@ -1231,9 +1289,13 @@ button.btn-text:focus-visible,
 .upcoming-item.border-divisi-bersama {
   border-left: 3.5px solid var(--divisi-bersama);
 }
+.upcoming-item.border-divisi-lainnya {
+  border-left: 3.5px solid var(--divisi-lainnya);
+}
 
-.upcoming-item.status-tentative.border-divisi-islam {
-  border-left: 3.5px dashed var(--divisi-islam);
+.upcoming-item.status-tentative.border-divisi-islam,
+.upcoming-item.status-tentative.border-divisi-keislaman {
+  border-left: 3.5px dashed var(--divisi-keislaman);
 }
 .upcoming-item.status-tentative.border-divisi-kepemimpinan {
   border-left: 3.5px dashed var(--divisi-kepemimpinan);
@@ -1246,6 +1308,50 @@ button.btn-text:focus-visible,
 }
 .upcoming-item.status-tentative.border-divisi-bersama {
   border-left: 3.5px dashed var(--divisi-bersama);
+}
+.upcoming-item.status-tentative.border-divisi-lainnya {
+  border-left: 3.5px dashed var(--divisi-lainnya);
+}
+
+/* Hover state per divisi untuk .upcoming-item */
+.upcoming-item.border-divisi-islam:hover,
+.upcoming-item.border-divisi-keislaman:hover {
+  border-left-color: var(--divisi-keislaman);
+}
+.upcoming-item.border-divisi-kepemimpinan:hover {
+  border-left-color: var(--divisi-kepemimpinan);
+}
+.upcoming-item.border-divisi-media:hover {
+  border-left-color: var(--divisi-media);
+}
+.upcoming-item.border-divisi-wirausaha:hover {
+  border-left-color: var(--divisi-wirausaha);
+}
+.upcoming-item.border-divisi-bersama:hover {
+  border-left-color: var(--divisi-bersama);
+}
+.upcoming-item.border-divisi-lainnya:hover {
+  border-left-color: var(--divisi-lainnya);
+}
+
+.upcoming-item.status-tentative.border-divisi-islam:hover,
+.upcoming-item.status-tentative.border-divisi-keislaman:hover {
+  border-left-color: var(--divisi-keislaman);
+}
+.upcoming-item.status-tentative.border-divisi-kepemimpinan:hover {
+  border-left-color: var(--divisi-kepemimpinan);
+}
+.upcoming-item.status-tentative.border-divisi-media:hover {
+  border-left-color: var(--divisi-media);
+}
+.upcoming-item.status-tentative.border-divisi-wirausaha:hover {
+  border-left-color: var(--divisi-wirausaha);
+}
+.upcoming-item.status-tentative.border-divisi-bersama:hover {
+  border-left-color: var(--divisi-bersama);
+}
+.upcoming-item.status-tentative.border-divisi-lainnya:hover {
+  border-left-color: var(--divisi-lainnya);
 }
 
 .upcoming-item-left {
@@ -1454,20 +1560,112 @@ button.btn-text:focus-visible,
 
 .event-card:hover {
   box-shadow: var(--shadow-md);
-  border-color: var(--primary-border);
-  border-left-color: var(--primary);
+  border-color: var(--border-focus);
   transform: translateY(-2px);
 }
 
-/* Status Tentatif: Dashed left border menggunakan aksen warning */
+/* Border Divisi untuk .event-card */
+.event-card.border-divisi-islam,
+.event-card.border-divisi-keislaman {
+  border-left: 4px solid var(--divisi-keislaman);
+}
+.event-card.border-divisi-kepemimpinan {
+  border-left: 4px solid var(--divisi-kepemimpinan);
+}
+.event-card.border-divisi-media {
+  border-left: 4px solid var(--divisi-media);
+}
+.event-card.border-divisi-wirausaha {
+  border-left: 4px solid var(--divisi-wirausaha);
+}
+.event-card.border-divisi-bersama {
+  border-left: 4px solid var(--divisi-bersama);
+}
+.event-card.border-divisi-lainnya {
+  border-left: 4px solid var(--divisi-lainnya);
+}
+
+/* Hover state per divisi untuk .event-card */
+.event-card.border-divisi-islam:hover,
+.event-card.border-divisi-keislaman:hover {
+  border-color: var(--divisi-keislaman);
+  border-left-color: var(--divisi-keislaman);
+}
+.event-card.border-divisi-kepemimpinan:hover {
+  border-color: var(--divisi-kepemimpinan);
+  border-left-color: var(--divisi-kepemimpinan);
+}
+.event-card.border-divisi-media:hover {
+  border-color: var(--divisi-media);
+  border-left-color: var(--divisi-media);
+}
+.event-card.border-divisi-wirausaha:hover {
+  border-color: var(--divisi-wirausaha);
+  border-left-color: var(--divisi-wirausaha);
+}
+.event-card.border-divisi-bersama:hover {
+  border-color: var(--divisi-bersama);
+  border-left-color: var(--divisi-bersama);
+}
+.event-card.border-divisi-lainnya:hover {
+  border-color: var(--divisi-lainnya);
+  border-left-color: var(--divisi-lainnya);
+}
+
+/* Status Tentatif: Dashed left border */
 .event-card.status-tentative {
   border-left: 4px dashed var(--warning);
   background: linear-gradient(to right, #fffdfa 0%, #ffffff 8%);
 }
 
+.event-card.status-tentative.border-divisi-islam,
+.event-card.status-tentative.border-divisi-keislaman {
+  border-left: 4px dashed var(--divisi-keislaman);
+}
+.event-card.status-tentative.border-divisi-kepemimpinan {
+  border-left: 4px dashed var(--divisi-kepemimpinan);
+}
+.event-card.status-tentative.border-divisi-media {
+  border-left: 4px dashed var(--divisi-media);
+}
+.event-card.status-tentative.border-divisi-wirausaha {
+  border-left: 4px dashed var(--divisi-wirausaha);
+}
+.event-card.status-tentative.border-divisi-bersama {
+  border-left: 4px dashed var(--divisi-bersama);
+}
+.event-card.status-tentative.border-divisi-lainnya {
+  border-left: 4px dashed var(--divisi-lainnya);
+}
+
 .event-card.status-tentative:hover {
   border-color: #fde68a;
-  border-left: 4px dashed var(--warning);
+}
+
+.event-card.status-tentative.border-divisi-islam:hover,
+.event-card.status-tentative.border-divisi-keislaman:hover {
+  border-color: var(--divisi-keislaman);
+  border-left: 4px dashed var(--divisi-keislaman);
+}
+.event-card.status-tentative.border-divisi-kepemimpinan:hover {
+  border-color: var(--divisi-kepemimpinan);
+  border-left: 4px dashed var(--divisi-kepemimpinan);
+}
+.event-card.status-tentative.border-divisi-media:hover {
+  border-color: var(--divisi-media);
+  border-left: 4px dashed var(--divisi-media);
+}
+.event-card.status-tentative.border-divisi-wirausaha:hover {
+  border-color: var(--divisi-wirausaha);
+  border-left: 4px dashed var(--divisi-wirausaha);
+}
+.event-card.status-tentative.border-divisi-bersama:hover {
+  border-color: var(--divisi-bersama);
+  border-left: 4px dashed var(--divisi-bersama);
+}
+.event-card.status-tentative.border-divisi-lainnya:hover {
+  border-color: var(--divisi-lainnya);
+  border-left: 4px dashed var(--divisi-lainnya);
 }
 
 /* Badge Status Event */
@@ -1501,21 +1699,28 @@ button.btn-text:focus-visible,
 .divisi-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  padding: 0.15rem 0.55rem;
+  padding: 0.18rem 0.6rem;
   border-radius: var(--radius-full);
   line-height: 1.2;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
-.divisi-badge.divisi-islam {
-  background-color: var(--divisi-islam-bg);
-  color: var(--divisi-islam-text);
-  border: 1px solid var(--divisi-islam-border);
+.divisi-badge i,
+.divisi-badge .fa-solid {
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.divisi-badge.divisi-islam,
+.divisi-badge.divisi-keislaman {
+  background-color: var(--divisi-keislaman-bg);
+  color: var(--divisi-keislaman-text);
+  border: 1px solid var(--divisi-keislaman-border);
 }
 .divisi-badge.divisi-kepemimpinan {
   background-color: var(--divisi-kepemimpinan-bg);
@@ -1536,6 +1741,11 @@ button.btn-text:focus-visible,
   background-color: var(--divisi-bersama-bg);
   color: var(--divisi-bersama-text);
   border: 1px solid var(--divisi-bersama-border);
+}
+.divisi-badge.divisi-lainnya {
+  background-color: var(--divisi-lainnya-bg);
+  color: var(--divisi-lainnya-text);
+  border: 1px solid var(--divisi-lainnya-border);
 }
 
 .event-card-header {
@@ -1988,27 +2198,28 @@ select.form-control {
 
 .custom-select-options {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 2px);
   left: 0;
   right: 0;
+  width: 100%;
   z-index: 100;
   background: var(--bg-card) !important;
   background-color: var(--bg-card) !important;
   opacity: 1 !important;
   border: 1.5px solid var(--border-light);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-xl);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   list-style: none;
   margin: 0;
-  padding: 0.375rem;
+  padding: 0.35rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.3rem;
   max-height: 280px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
-  animation: dropdownIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: dropdownIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .custom-select-options::-webkit-scrollbar {
@@ -2056,20 +2267,23 @@ select.form-control {
   cursor: pointer;
   transition: all var(--transition-fast);
   color: var(--text-main);
-  background-color: var(--bg-card);
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border-light);
   outline: none;
 }
 
 .custom-select-option:hover,
 .custom-select-option:focus-visible {
   background-color: var(--primary-light);
-  color: var(--primary-text);
+  color: var(--primary);
+  border-color: var(--primary-border);
 }
 
 .custom-select-option.selected {
   background-color: var(--primary-light);
   color: var(--primary);
-  font-weight: 600;
+  border-color: var(--primary-border);
+  font-weight: 700;
 }
 
 .status-indicator-dot {
@@ -2089,10 +2303,42 @@ select.form-control {
   border: 2px solid var(--warning);
 }
 
-/* Indikator Titik Divisi */
-.status-indicator-dot.dot-divisi-islam {
-  background-color: var(--divisi-islam);
-  box-shadow: 0 0 0 2px var(--divisi-islam-bg);
+/* Indikator Titik & Ikon Divisi */
+.divisi-option-icon {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.icon-divisi-islam,
+.icon-divisi-keislaman {
+  color: var(--divisi-keislaman);
+}
+.icon-divisi-kepemimpinan {
+  color: var(--divisi-kepemimpinan);
+}
+.icon-divisi-media {
+  color: var(--divisi-media);
+}
+.icon-divisi-wirausaha {
+  color: var(--divisi-wirausaha);
+}
+.icon-divisi-bersama {
+  color: var(--divisi-bersama);
+}
+.icon-divisi-lainnya {
+  color: var(--divisi-lainnya);
+}
+
+.status-indicator-dot.dot-divisi-islam,
+.status-indicator-dot.dot-divisi-keislaman {
+  background-color: var(--divisi-keislaman);
+  box-shadow: 0 0 0 2px var(--divisi-keislaman-bg);
 }
 .status-indicator-dot.dot-divisi-kepemimpinan {
   background-color: var(--divisi-kepemimpinan);
@@ -2109,6 +2355,10 @@ select.form-control {
 .status-indicator-dot.dot-divisi-bersama {
   background-color: var(--divisi-bersama);
   box-shadow: 0 0 0 2px var(--divisi-bersama-bg);
+}
+.status-indicator-dot.dot-divisi-lainnya {
+  background-color: var(--divisi-lainnya);
+  box-shadow: 0 0 0 2px var(--divisi-lainnya-bg);
 }
 
 /* Custom Divisi Dropdown: 100% Solid Non-Transparent Background */
@@ -2137,6 +2387,13 @@ select.form-control {
   font-weight: 500;
   color: var(--text-main);
   min-width: 0;
+}
+
+.divisi-selected-display i,
+.divisi-selected-display .fa-solid {
+  font-size: 15px;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .divisi-selected-display .divisi-name-text {
@@ -3459,6 +3716,32 @@ span.flatpickr-weekday {
   border-color: rgba(251, 191, 36, 0.4);
 }
 
+[data-theme="dark"] .event-card.status-tentative.border-divisi-islam:hover,
+[data-theme="dark"] .event-card.status-tentative.border-divisi-keislaman:hover {
+  border-color: var(--divisi-keislaman);
+  border-left: 4px dashed var(--divisi-keislaman);
+}
+[data-theme="dark"] .event-card.status-tentative.border-divisi-kepemimpinan:hover {
+  border-color: var(--divisi-kepemimpinan);
+  border-left: 4px dashed var(--divisi-kepemimpinan);
+}
+[data-theme="dark"] .event-card.status-tentative.border-divisi-media:hover {
+  border-color: var(--divisi-media);
+  border-left: 4px dashed var(--divisi-media);
+}
+[data-theme="dark"] .event-card.status-tentative.border-divisi-wirausaha:hover {
+  border-color: var(--divisi-wirausaha);
+  border-left: 4px dashed var(--divisi-wirausaha);
+}
+[data-theme="dark"] .event-card.status-tentative.border-divisi-bersama:hover {
+  border-color: var(--divisi-bersama);
+  border-left: 4px dashed var(--divisi-bersama);
+}
+[data-theme="dark"] .event-card.status-tentative.border-divisi-lainnya:hover {
+  border-color: var(--divisi-lainnya);
+  border-left: 4px dashed var(--divisi-lainnya);
+}
+
 [data-theme="dark"] .status-badge-tentative {
   color: #fde68a;
 }
@@ -3662,4 +3945,243 @@ body:not(.is-admin) .event-actions {
   background: var(--primary-light);
   color: var(--primary);
   border-color: var(--primary-border);
+}
+
+/* ==========================================================================
+   MODAL & KOMPONEN RIWAYAT & ARSIP KEGIATAN (ADMIN)
+   ========================================================================== */
+.modal-dialog.modal-archive {
+  max-width: 760px;
+}
+
+.archive-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.archive-stats-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.archive-stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.stat-chip-terlaksana {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+
+.stat-chip-tidak {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.stat-chip-belum {
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+
+.archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-bottom: 2.5rem;
+}
+
+.archive-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  position: relative;
+}
+
+.archive-card:hover {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-md);
+}
+
+.archive-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.archive-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.archive-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.archive-card-desc {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0.25rem 0 0 0;
+}
+
+.archive-card-divider {
+  height: 1px;
+  background-color: var(--border-light);
+  margin: 0.25rem 0;
+}
+
+.archive-eval-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.archive-custom-select {
+  position: relative;
+  width: 100%;
+}
+
+.archive-custom-options {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 100;
+}
+
+.archive-keterangan-textarea {
+  width: 100%;
+  min-height: 64px;
+  resize: vertical;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  line-height: 1.45;
+}
+
+.archive-actions-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.archive-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.archive-status-badge.status-terlaksana {
+  background-color: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+}
+
+.archive-status-badge.status-tidak {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+.archive-status-badge.status-belum {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+}
+
+.upcoming-item-meta .divisi-badge {
+  font-size: 0.6875rem;
+  padding: 0.12rem 0.5rem;
+}
+
+.archive-loading-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 1.5rem;
+  text-align: center;
+}
+
+.archive-spinner-large {
+  width: 42px;
+  height: 42px;
+  border: 3.5px solid var(--border-light);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  margin-bottom: 1.125rem;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+
+.archive-loading-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 0.35rem;
+}
+
+.archive-loading-subtext {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.archive-card.dropdown-open {
+  z-index: 30;
+}
+
+.btn-archive-icon {
+  position: relative;
+}
+
+[data-theme="dark"] .archive-card {
+  background: var(--bg-card);
+  border-color: var(--border-light);
+}
+
+[data-theme="dark"] .stat-chip-belum {
+  background-color: var(--bg-subtle);
+  color: var(--text-muted);
+  border-color: var(--border-light);
 }

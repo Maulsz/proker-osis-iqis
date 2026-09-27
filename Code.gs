@@ -139,6 +139,25 @@ var HEADERS = [
 var SUBSCRIBERS_SHEET_NAME = "Subscribers";
 var SUBSCRIBER_HEADERS = ["email", "subscribed_at", "status", "unsubscribed_at"];
 
+// Konfigurasi sheet tab riwayat & arsip kegiatan (Arsip - 14 Kolom)
+var ARCHIVE_SHEET_NAME = "Arsip";
+var ARCHIVE_HEADERS = [
+  "id",
+  "judul",
+  "deskripsi",
+  "lokasi",
+  "divisi",
+  "proker",
+  "petugas",
+  "tanggal_mulai",
+  "tanggal_selesai",
+  "jam_mulai",
+  "jam_selesai",
+  "status",
+  "status_pelaksanaan",
+  "keterangan_pelaksanaan"
+];
+
 // ============================================================================
 // HELPER OTENTIKASI & SISTEM TOKEN ADMIN
 // ============================================================================
@@ -536,6 +555,54 @@ function getOrCreateSubscribersSheet() {
 }
 
 /**
+ * Fungsi pembantu untuk membuka atau membuat sheet tab 'Arsip'
+ * untuk menyimpan riwayat kegiatan yang telah selesai lebih dari 24 jam.
+ */
+function getOrCreateArchiveSheet() {
+  var ss;
+  try {
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  } catch (err) {
+    throw new Error("Gagal membuka Spreadsheet dengan ID: " + SPREADSHEET_ID);
+  }
+
+  var sheet = ss.getSheetByName(ARCHIVE_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(ARCHIVE_SHEET_NAME);
+  }
+
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+
+  if (lastRow === 0 || lastCol === 0) {
+    sheet.getRange(1, 1, 1, ARCHIVE_HEADERS.length).setValues([ARCHIVE_HEADERS]);
+    var headerRange = sheet.getRange(1, 1, 1, ARCHIVE_HEADERS.length);
+    headerRange.setFontWeight("bold");
+    headerRange.setBackground("#10b981");
+    headerRange.setFontColor("#ffffff");
+    headerRange.setHorizontalAlignment("center");
+    sheet.setFrozenRows(1);
+
+    sheet.setColumnWidth(1, 140); // id
+    sheet.setColumnWidth(2, 220); // judul
+    sheet.setColumnWidth(3, 260); // deskripsi
+    sheet.setColumnWidth(4, 180); // lokasi
+    sheet.setColumnWidth(5, 180); // divisi
+    sheet.setColumnWidth(6, 200); // proker
+    sheet.setColumnWidth(7, 150); // petugas
+    sheet.setColumnWidth(8, 120); // tanggal_mulai
+    sheet.setColumnWidth(9, 120); // tanggal_selesai
+    sheet.setColumnWidth(10, 100); // jam_mulai
+    sheet.setColumnWidth(11, 100); // jam_selesai
+    sheet.setColumnWidth(12, 110); // status
+    sheet.setColumnWidth(13, 160); // status_pelaksanaan
+    sheet.setColumnWidth(14, 280); // keterangan_pelaksanaan
+  }
+
+  return sheet;
+}
+
+/**
  * Format respon standar JSON dengan ContentService
  */
 function createJsonResponse(data) {
@@ -566,6 +633,152 @@ function rowToObject(row) {
 }
 
 /**
+ * Helper untuk mengonversi baris sheet Arsip menjadi objek riwayat kegiatan (14 Kolom)
+ */
+function rowToArchiveObject(row) {
+  return {
+    id: String(row[0] || ""),
+    judul: String(row[1] || ""),
+    deskripsi: String(row[2] || ""),
+    lokasi: String(row[3] || ""),
+    divisi: String(row[4] || ""),
+    proker: String(row[5] || ""),
+    petugas: String(row[6] || ""),
+    tanggal_mulai: String(row[7] || ""),
+    tanggal_selesai: String(row[8] || ""),
+    jam_mulai: String(row[9] || ""),
+    jam_selesai: String(row[10] || ""),
+    status: String(row[11] || "confirmed"),
+    status_pelaksanaan: String(row[12] || "Belum Dinilai"),
+    keterangan_pelaksanaan: String(row[13] || "")
+  };
+}
+
+/**
+ * ============================================================================
+ * PANDUAN PENGATURAN TRIGGER AUTO-ARCHIVE (archiveExpiredEvents):
+ * 1. Buka editor Google Apps Script ini.
+ * 2. Di bilah sisi kiri, klik ikon jam pemicu (Triggers / Pemicu).
+ * 3. Klik tombol "+ Add Trigger" (+ Tambahkan Pemicu) di kanan bawah.
+ * 4. Tentukan konfigurasi pemicu:
+ *    - Choose which function to run : archiveExpiredEvents
+ *    - Choose which deployment     : Head
+ *    - Select event source          : Time-driven (Berdasarkan waktu)
+ *    - Select type of time based trigger : Hour timer (Penentu waktu jam)
+ *    - Select hour interval         : Every hour (Setiap jam)
+ * 5. Klik "Save" (Simpan).
+ * ============================================================================
+ *
+ * Fungsi otomatis untuk memindahkan kegiatan yang telah berakhir lebih dari 24 jam
+ * dari tab 'Kegiatan' ke tab 'Arsip'.
+ */
+function archiveExpiredEvents() {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (lockErr) {
+    console.warn("Tidak dapat memperoleh lock untuk archiveExpiredEvents:", lockErr);
+    return;
+  }
+
+  try {
+    var eventsSheet = getOrCreateSheet();
+    var lastRow = eventsSheet.getLastRow();
+    if (lastRow <= 1) {
+      console.log("Tidak ada kegiatan di tab Kegiatan untuk diarsipkan.");
+      return;
+    }
+
+    var values = eventsSheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
+    var archiveSheet = getOrCreateArchiveSheet();
+
+    var now = new Date().getTime();
+    var TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+    var rowsToArchive = [];
+
+    for (var i = 0; i < values.length; i++) {
+      var row = values[i];
+      var id = row[0];
+      if (!id) continue;
+
+      var startDateStr = String(row[7] || "").trim();
+      var endDateStr = String(row[8] || "").trim() || startDateStr;
+      var endTimeStr = String(row[10] || "").trim() || "23:59";
+
+      if (!endDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(endDateStr)) {
+        continue;
+      }
+
+      var timeParts = endTimeStr.split(":");
+      var hour = timeParts.length >= 1 ? parseInt(timeParts[0], 10) : 23;
+      var min = timeParts.length >= 2 ? parseInt(timeParts[1], 10) : 59;
+      if (isNaN(hour)) hour = 23;
+      if (isNaN(min)) min = 59;
+
+      var dateParts = endDateStr.split("-");
+      var yr = parseInt(dateParts[0], 10);
+      var mo = parseInt(dateParts[1], 10);
+      var dy = parseInt(dateParts[2], 10);
+
+      // Zona Waktu Asia/Makassar (WITA, UTC+8)
+      var endDateTimeMs = Date.UTC(yr, mo - 1, dy, hour - 8, min, 0);
+
+      // Cek apakah sudah lewat lebih dari 24 jam sejak waktu selesai kegiatan
+      if (now - endDateTimeMs > TWENTY_FOUR_HOURS_MS) {
+        var archiveRow = [
+          row[0],  // id
+          row[1],  // judul
+          row[2],  // deskripsi
+          row[3],  // lokasi
+          row[4],  // divisi
+          row[5],  // proker
+          row[6],  // petugas
+          row[7],  // tanggal_mulai
+          row[8],  // tanggal_selesai
+          row[9],  // jam_mulai
+          row[10], // jam_selesai
+          row[11], // status
+          "Belum Dinilai", // status_pelaksanaan
+          ""       // keterangan_pelaksanaan
+        ];
+        rowsToArchive.push({
+          rowIndex: i + 2,
+          archiveRow: archiveRow,
+          judul: row[1]
+        });
+      }
+    }
+
+    if (rowsToArchive.length === 0) {
+      console.log("Tidak ada kegiatan kedaluwarsa (>24 jam) untuk diarsipkan.");
+      return;
+    }
+
+    console.log("Menemukan " + rowsToArchive.length + " kegiatan yang memenuhi syarat untuk diarsipkan.");
+
+    // 1. Tambahkan semua baris ke sheet Arsip
+    for (var a = 0; a < rowsToArchive.length; a++) {
+      archiveSheet.appendRow(rowsToArchive[a].archiveRow);
+    }
+
+    // 2. Hapus baris dari sheet Kegiatan dari bawah ke atas agar indeks baris tidak bergeser
+    for (var d = rowsToArchive.length - 1; d >= 0; d--) {
+      eventsSheet.deleteRow(rowsToArchive[d].rowIndex);
+      console.log("Mengarsipkan: '" + rowsToArchive[d].judul + "' (baris " + rowsToArchive[d].rowIndex + ")");
+    }
+
+    console.log("archiveExpiredEvents selesai: " + rowsToArchive.length + " kegiatan berhasil dipindahkan ke Arsip.");
+
+  } catch (err) {
+    console.error("Kesalahan saat menjalankan archiveExpiredEvents:", err);
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (e) {}
+  }
+}
+
+/**
  * Helper untuk escape string HTML di sisi server
  */
 function escapeHtml(str) {
@@ -588,22 +801,63 @@ function setupAll() {
   console.log("Tab 'Kegiatan' siap (jumlah baris: " + eventsSheet.getLastRow() + ", kolom: " + eventsSheet.getLastColumn() + ").");
   var subSheet = getOrCreateSubscribersSheet();
   console.log("Tab 'Subscribers' siap (jumlah baris: " + subSheet.getLastRow() + ").");
+  var arcSheet = getOrCreateArchiveSheet();
+  console.log("Tab 'Arsip' siap (jumlah baris: " + arcSheet.getLastRow() + ", kolom: " + arcSheet.getLastColumn() + ").");
   var remainingQuota = MailApp.getRemainingDailyQuota();
   console.log("Sisa kuota pengiriman email hari ini: " + remainingQuota + " email.");
   console.log("Setup selesai dengan sukses!");
 }
 
 // ============================================================================
-// ENDPOINT GET (AKSES PUBLIK - TANPA PIN)
+// ENDPOINT GET (AKSES PUBLIK KEGIATAN & AKSES TEROTORISASI ARSIP)
 // ============================================================================
 /**
- * Seluruh pengunjung (Guest) dapat membaca data kegiatan secara bebas:
- * - GET ?id=... (mengambil 1 kegiatan spesifik)
- * - GET tanpa parameter (mengambil seluruh daftar kegiatan)
+ * - GET ?action=archive&token=... (mengambil daftar riwayat arsip - Hanya Admin Terotentikasi)
+ * - GET ?id=... (mengambil 1 kegiatan spesifik dari Kegiatan - Publik)
+ * - GET tanpa parameter (mengambil seluruh daftar kegiatan aktif dari Kegiatan - Publik)
  * Tab 'Subscribers' TIDAK PERNAH diekspos melalui doGet.
  */
 function doGet(e) {
   try {
+    // ------------------------------------------------------------------------
+    // CABANG 1: AKSES ARSIP (Hanya Admin Terotentikasi via token)
+    // ------------------------------------------------------------------------
+    if (e && e.parameter && e.parameter.action === "archive") {
+      var clientToken = e.parameter.token || "";
+      if (!isValidAdminToken(clientToken)) {
+        return createJsonResponse({
+          success: false,
+          unauthorized: true,
+          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan PIN Admin."
+        });
+      }
+
+      var archiveSheet = getOrCreateArchiveSheet();
+      var lastArchiveRow = archiveSheet.getLastRow();
+      if (lastArchiveRow <= 1) {
+        return createJsonResponse({
+          success: true,
+          data: []
+        });
+      }
+
+      var archiveValues = archiveSheet.getRange(2, 1, lastArchiveRow - 1, ARCHIVE_HEADERS.length).getDisplayValues();
+      var archiveEvents = [];
+      for (var a = 0; a < archiveValues.length; a++) {
+        if (archiveValues[a][0] !== "") {
+          archiveEvents.push(rowToArchiveObject(archiveValues[a]));
+        }
+      }
+
+      return createJsonResponse({
+        success: true,
+        data: archiveEvents
+      });
+    }
+
+    // ------------------------------------------------------------------------
+    // CABANG 2: AKSES PUBLIK KEGIATAN AKTIF (Default)
+    // ------------------------------------------------------------------------
     var sheet = getOrCreateSheet();
     var lastRow = sheet.getLastRow();
 
@@ -1107,12 +1361,96 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
+    // AKSI 9: UPDATE ARCHIVE STATUS (Evaluasi Pelaksanaan Kegiatan - Hanya Admin)
+    // ------------------------------------------------------------------------
+    else if (action === "updateArchiveStatus") {
+      if (!isValidAdminToken(clientToken)) {
+        return createJsonResponse({
+          success: false,
+          unauthorized: true,
+          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan PIN Admin."
+        });
+      }
+
+      var targetArchiveId = String(requestBody.id || data.id || "").trim();
+      var statusPelaksanaan = String(requestBody.status_pelaksanaan || data.status_pelaksanaan || "").trim();
+      var keteranganPelaksanaan = String(requestBody.keterangan_pelaksanaan || data.keterangan_pelaksanaan || "").trim();
+
+      if (!targetArchiveId) {
+        return createJsonResponse({
+          success: false,
+          error: "ID kegiatan arsip wajib disertakan."
+        });
+      }
+
+      var validStatuses = ["Terlaksana", "Tidak Terlaksana", "Belum Dinilai"];
+      if (validStatuses.indexOf(statusPelaksanaan) === -1) {
+        return createJsonResponse({
+          success: false,
+          error: "Status pelaksanaan tidak valid. Harus salah satu dari: 'Terlaksana', 'Tidak Terlaksana', atau 'Belum Dinilai'."
+        });
+      }
+
+      var archiveLock = LockService.getScriptLock();
+      try {
+        archiveLock.waitLock(30000);
+      } catch (lockErr) {
+        return createJsonResponse({
+          success: false,
+          error: "Server sedang sibuk. Silakan coba beberapa saat lagi."
+        });
+      }
+
+      try {
+        var arcSheet = getOrCreateArchiveSheet();
+        var lastArcRow = arcSheet.getLastRow();
+        if (lastArcRow <= 1) {
+          return createJsonResponse({
+            success: false,
+            error: "Tidak ada data kegiatan di sheet Arsip."
+          });
+        }
+
+        var arcIdValues = arcSheet.getRange(2, 1, lastArcRow - 1, 1).getDisplayValues();
+        var targetArcRow = -1;
+        for (var p = 0; p < arcIdValues.length; p++) {
+          if (arcIdValues[p][0] === targetArchiveId) {
+            targetArcRow = p + 2;
+            break;
+          }
+        }
+
+        if (targetArcRow === -1) {
+          return createJsonResponse({
+            success: false,
+            error: "Kegiatan arsip dengan ID '" + targetArchiveId + "' tidak ditemukan."
+          });
+        }
+
+        // Update kolom 13 (status_pelaksanaan) dan kolom 14 (keterangan_pelaksanaan)
+        arcSheet.getRange(targetArcRow, 13, 1, 2).setValues([[statusPelaksanaan, keteranganPelaksanaan]]);
+
+        var fullUpdatedRow = arcSheet.getRange(targetArcRow, 1, 1, ARCHIVE_HEADERS.length).getDisplayValues()[0];
+
+        return createJsonResponse({
+          success: true,
+          message: "Status evaluasi pelaksanaan berhasil diperbarui.",
+          data: rowToArchiveObject(fullUpdatedRow)
+        });
+      } finally {
+        try {
+          archiveLock.releaseLock();
+        } catch (e) {}
+      }
+    }
+
+    // ------------------------------------------------------------------------
     // AKSI TIDAK DIKENALI
     // ------------------------------------------------------------------------
     else {
       return createJsonResponse({
         success: false,
-        error: "Aksi '" + action + "' tidak dikenali. Gunakan: 'login', 'verifySession', 'logout', 'subscribeEmail', 'unsubscribeEmail', 'checkSubscription', 'create', 'update', atau 'delete'."
+        error: "Aksi '" + action + "' tidak dikenali. Gunakan: 'login', 'verifySession', 'logout', 'subscribeEmail', 'unsubscribeEmail', 'checkSubscription', 'create', 'update', 'delete', atau 'updateArchiveStatus'."
       });
     }
 

@@ -32,24 +32,42 @@ function escapeHtml(str) {
 }
 
 /**
- * Pilihan Divisi Penanggung Jawab Program Kerja OSIS
+ * Pilihan Divisi Penanggung Jawab Program Kerja OSIS (Font Awesome Icons & Color Map)
  */
 const DIVISI_OPTIONS = [
-  { name: "Keislaman dan Pembinaan Karakter", key: "islam" },
-  { name: "Kepemimpinan dan Kebahasaan", key: "kepemimpinan" },
-  { name: "Komunikasi Media Kreatif", key: "media" },
-  { name: "Kewirausahaan dan Sosial Lingkungan", key: "wirausaha" },
-  { name: "Bersama / Proker Bersama", key: "bersama" }
+  { name: "Keislaman dan Pembinaan Karakter", key: "islam", icon: "fa-solid fa-mosque", color: "#d97706" },
+  { name: "Kepemimpinan dan Kebahasaan", key: "kepemimpinan", icon: "fa-solid fa-language", color: "#7c3aed" },
+  { name: "Komunikasi Media Kreatif", key: "media", icon: "fa-solid fa-photo-film", color: "#e11d48" },
+  { name: "Kewirausahaan dan Sosial Lingkungan", key: "wirausaha", icon: "fa-solid fa-seedling", color: "#0891b2" },
+  { name: "Bersama / Proker Bersama", key: "bersama", icon: "fa-solid fa-people-group", color: "#78716c" },
+  { name: "Lainnya", key: "lainnya", icon: "fa-solid fa-ellipsis", color: "var(--text-muted)" }
 ];
+
+/**
+ * Helper untuk mendapatkan detail info divisi (key, icon, color, isCustom)
+ */
+function getDivisiInfo(name) {
+  if (!name) return null;
+  const clean = String(name).trim();
+  const found = DIVISI_OPTIONS.find(d => d.name.toLowerCase() === clean.toLowerCase() && d.key !== "lainnya");
+  if (found) return found;
+
+  // Jika tidak cocok dengan 5 divisi tetap, dianggap opsi "Lainnya" (Custom)
+  return {
+    name: clean,
+    key: "lainnya",
+    icon: "fa-solid fa-ellipsis",
+    color: "var(--text-muted)",
+    isCustom: true
+  };
+}
 
 /**
  * Helper untuk mendapatkan key CSS divisi berdasarkan nama divisi
  */
 function getDivisiKey(name) {
-  if (!name) return "";
-  const clean = String(name).trim();
-  const found = DIVISI_OPTIONS.find(d => d.name === clean);
-  return found ? found.key : "";
+  const info = getDivisiInfo(name);
+  return info ? info.key : "";
 }
 
 /**
@@ -666,6 +684,131 @@ const ApiClient = {
     }
 
     return result;
+  },
+
+  /**
+   * 6. GET: Ambil semua data kegiatan arsip (Hanya Admin)
+   */
+  async getArchiveEvents() {
+    if (!this.hasConfiguredUrl()) {
+      const cached = localStorage.getItem("kalender_kegiatan_arsip");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) return parsed;
+        } catch (e) {}
+      }
+      const demoArchive = [
+        {
+          id: "arc_demo_1",
+          judul: "Penyuluhan Bahaya Narkoba & Kenakalan Remaja",
+          deskripsi: "Sosialisasi bersama BNN dan pihak kepolisian untuk seluruh siswa kelas X dan XI.",
+          lokasi: "Aula Graha Bhakti",
+          divisi: "Keislaman dan Pembinaan Karakter",
+          proker: "Penyuluhan Karakter Remaja",
+          petugas: "Divisi Keislaman",
+          tanggal_mulai: "2026-08-10",
+          tanggal_selesai: "2026-08-10",
+          jam_mulai: "08:00",
+          jam_selesai: "11:00",
+          status: "confirmed",
+          status_pelaksanaan: "Terlaksana",
+          keterangan_pelaksanaan: "Kegiatan berjalan lancar dihadiri 250 siswa dan pemateri dari BNN."
+        },
+        {
+          id: "arc_demo_2",
+          judul: "Lomba Pidato Bahasa Arab & Inggris Antar Kelas",
+          deskripsi: "Kompetisi kebahasaan dalam rangka memperingati Bulan Bahasa sekolah.",
+          lokasi: "Lab Bahasa & Ruang Audio Visual",
+          divisi: "Kepemimpinan dan Kebahasaan",
+          proker: "Bulan Bahasa OSIS",
+          petugas: "Divisi Kebahasaan",
+          tanggal_mulai: "2026-08-18",
+          tanggal_selesai: "2026-08-19",
+          jam_mulai: "08:30",
+          jam_selesai: "14:00",
+          status: "confirmed",
+          status_pelaksanaan: "Belum Dinilai",
+          keterangan_pelaksanaan: ""
+        }
+      ];
+      localStorage.setItem("kalender_kegiatan_arsip", JSON.stringify(demoArchive));
+      return demoArchive;
+    }
+
+    if (!AuthState.token) {
+      throw new Error("Sesi admin tidak ditemukan. Silakan login sebagai admin.");
+    }
+
+    const url = `${APPS_SCRIPT_URL}?action=archive&token=${encodeURIComponent(AuthState.token)}`;
+    const response = await fetch(url, {
+      method: "GET",
+      mode: "cors"
+    });
+
+    if (!response.ok) {
+      throw new Error(`Gagal memuat riwayat arsip (${response.status} ${response.statusText})`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      if (result.unauthorized) {
+        Auth.handleSessionExpired();
+      }
+      throw new Error(result.error || "Gagal memuat riwayat kegiatan dari Arsip.");
+    }
+
+    return Array.isArray(result.data) ? result.data : [];
+  },
+
+  /**
+   * 7. POST: Perbarui status & catatan pelaksanaan kegiatan di Arsip (Hanya Admin)
+   */
+  async updateArchiveStatus(id, statusPelaksanaan, keteranganPelaksanaan) {
+    if (!this.hasConfiguredUrl()) {
+      let archives = await this.getArchiveEvents();
+      const index = archives.findIndex(item => item.id === id);
+      if (index === -1) {
+        throw new Error("Data arsip tidak ditemukan di database lokal.");
+      }
+      archives[index].status_pelaksanaan = statusPelaksanaan;
+      archives[index].keterangan_pelaksanaan = keteranganPelaksanaan;
+      localStorage.setItem("kalender_kegiatan_arsip", JSON.stringify(archives));
+      return { success: true, message: "Status pelaksanaan berhasil diperbarui (Mode Demo)", data: archives[index] };
+    }
+
+    const payload = JSON.stringify({
+      action: "updateArchiveStatus",
+      token: AuthState.token,
+      data: {
+        id: id,
+        status_pelaksanaan: statusPelaksanaan,
+        keterangan_pelaksanaan: keteranganPelaksanaan
+      }
+    });
+
+    const response = await fetch(APPS_SCRIPT_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: payload
+    });
+
+    if (!response.ok) {
+      throw new Error(`Respon server bermasalah (${response.status})`);
+    }
+
+    const result = await response.json();
+    if (!result.success) {
+      if (result.unauthorized) {
+        Auth.handleSessionExpired();
+      }
+      throw new Error(result.error || "Gagal memperbarui status pelaksanaan arsip.");
+    }
+
+    return result;
   }
 };
 
@@ -771,28 +914,35 @@ const UI = {
       else indicatorWrap.classList.add("hidden");
     }
 
-    // 2. Tombol Tambah Kegiatan di Header
+    // 2. Tombol Riwayat / Arsip Kegiatan di Header
+    const openArchiveBtn = document.getElementById("openArchiveModalBtn");
+    if (openArchiveBtn) {
+      if (isAdmin) openArchiveBtn.classList.remove("hidden");
+      else openArchiveBtn.classList.add("hidden");
+    }
+
+    // 3. Tombol Tambah Kegiatan di Header
     const openAddBtn = document.getElementById("openAddModalBtn");
     if (openAddBtn) {
       if (isAdmin) openAddBtn.classList.remove("hidden");
       else openAddBtn.classList.add("hidden");
     }
 
-    // 3. Tombol Quick Add di Header Agenda Tanggal Terpilih
+    // 4. Tombol Quick Add di Header Agenda Tanggal Terpilih
     const quickAddBtn = document.getElementById("quickAddBtn");
     if (quickAddBtn) {
       if (isAdmin) quickAddBtn.classList.remove("hidden");
       else quickAddBtn.classList.add("hidden");
     }
 
-    // 4. Tombol Add di Empty State Agenda
+    // 5. Tombol Add di Empty State Agenda
     const emptyStateAddBtn = document.getElementById("emptyStateAddBtn");
     if (emptyStateAddBtn) {
       if (isAdmin) emptyStateAddBtn.classList.remove("hidden");
       else emptyStateAddBtn.classList.add("hidden");
     }
 
-    // 5. Tombol Mobile FAB (Floating Action Button)
+    // 6. Tombol Mobile FAB (Floating Action Button)
     const mobileFabBtn = document.getElementById("mobileFabBtn");
     if (mobileFabBtn) {
       if (isAdmin) mobileFabBtn.classList.remove("hidden");
@@ -943,10 +1093,11 @@ const UI = {
         ? `<span class="status-badge status-badge-tentative">Rencana</span>`
         : `<span class="status-badge status-badge-confirmed">Terkonfirmasi</span>`;
 
-      const divKey = getDivisiKey(event.divisi);
-      const divisiBadge = (event.divisi && divKey)
-        ? `<span class="divisi-badge divisi-${divKey}">${escapeHtml(event.divisi)}</span>`
+      const divInfo = getDivisiInfo(event.divisi);
+      const divisiBadge = (event.divisi && divInfo)
+        ? `<span class="divisi-badge divisi-${divInfo.key}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(event.divisi)}</span></span>`
         : "";
+      const borderClass = (divInfo && divInfo.key) ? ` border-divisi-${divInfo.key}` : "";
 
       // Kontrol aksi (Edit & Hapus) hanya dirender jika pengguna adalah Administrator
       const adminActionsHtml = AuthState.isAdmin ? `
@@ -969,7 +1120,7 @@ const UI = {
       ` : "";
 
       return `
-      <div class="event-card${isTentative ? " status-tentative" : ""}" data-id="${event.id}">
+      <div class="event-card${borderClass}${isTentative ? " status-tentative" : ""}" data-id="${event.id}">
         <div class="event-card-header">
           <div style="display: flex; flex-direction: column; gap: 0.35rem; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -1096,8 +1247,8 @@ const UI = {
       const monthShort = DateHelper.BULAN_PENDEK[startDate.getMonth()];
       const isTentative = (event.status || "confirmed").toLowerCase() === "tentative";
       const countdown = DateHelper.getEventCountdown(event);
-      const divKey = getDivisiKey(event.divisi);
-      const borderClass = divKey ? ` border-divisi-${divKey}` : "";
+      const divInfo = getDivisiInfo(event.divisi);
+      const borderClass = divInfo ? ` border-divisi-${divInfo.key}` : "";
 
       return `
         <div class="upcoming-item${borderClass}${isTentative ? " status-tentative" : ""}" data-date="${event.tanggal_mulai}" title="Klik untuk membuka tanggal kegiatan">
@@ -1119,6 +1270,11 @@ const UI = {
                   </svg>
                   <span>${escapeHtml(event.jam_mulai || "-")} WITA</span>
                 </div>
+                ${event.divisi && divInfo ? `
+                <span class="divisi-badge divisi-${divInfo.key}" title="Divisi Penanggung Jawab">
+                  <i class="${divInfo.icon}"></i>
+                  <span>${escapeHtml(event.divisi)}</span>
+                </span>` : ""}
                 <div class="meta-item" title="Lokasi Kegiatan">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -1312,6 +1468,8 @@ const DivisiDropdown = {
   trigger: null,
   optionsList: null,
   hiddenInput: null,
+  lainnyaWrap: null,
+  lainnyaInput: null,
   isOpen: false,
 
   init() {
@@ -1319,6 +1477,8 @@ const DivisiDropdown = {
     this.trigger = document.getElementById("customDivisiTrigger");
     this.optionsList = document.getElementById("customDivisiOptions");
     this.hiddenInput = document.getElementById("eventDivisi");
+    this.lainnyaWrap = document.getElementById("divisiLainnyaWrap");
+    this.lainnyaInput = document.getElementById("eventDivisiLainnya");
 
     if (!this.wrap || !this.trigger || !this.optionsList || !this.hiddenInput) return;
 
@@ -1408,38 +1568,97 @@ const DivisiDropdown = {
   setValue(val = "") {
     if (!this.hiddenInput) return;
     const cleanVal = (val || "").trim();
-    this.hiddenInput.value = cleanVal;
+    const fixedOption = DIVISI_OPTIONS.find(d => d.name.toLowerCase() === cleanVal.toLowerCase() && d.key !== "lainnya");
 
-    // Update selected item in options list
-    if (this.optionsList) {
-      this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
-        const isMatch = opt.getAttribute("data-value") === cleanVal;
-        opt.classList.toggle("selected", isMatch);
-        opt.setAttribute("aria-selected", isMatch ? "true" : "false");
-      });
+    if (!cleanVal) {
+      // Reset / Kosong
+      this.hiddenInput.value = "";
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.value = "";
+        this.lainnyaInput.removeAttribute("required");
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          opt.classList.remove("selected");
+          opt.setAttribute("aria-selected", "false");
+        });
+      }
+      if (this.trigger) {
+        const valWrap = this.trigger.querySelector(".custom-select-value");
+        if (valWrap) {
+          valWrap.innerHTML = `<span class="divisi-placeholder" style="color: var(--text-muted);">Pilih Divisi Penanggung Jawab</span>`;
+        }
+      }
+      return;
     }
 
-    // Update trigger button UI
-    if (this.trigger) {
-      const valWrap = this.trigger.querySelector(".custom-select-value");
-      if (valWrap) {
-        const key = getDivisiKey(cleanVal);
-        if (cleanVal && key) {
+    if (fixedOption) {
+      // Salah satu dari 5 Divisi Tetap
+      this.hiddenInput.value = fixedOption.name;
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.value = "";
+        this.lainnyaInput.removeAttribute("required");
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          const isMatch = opt.getAttribute("data-value") === fixedOption.name;
+          opt.classList.toggle("selected", isMatch);
+          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+        });
+      }
+      if (this.trigger) {
+        const valWrap = this.trigger.querySelector(".custom-select-value");
+        if (valWrap) {
           valWrap.innerHTML = `
             <div class="divisi-selected-display">
-              <span class="status-indicator-dot dot-divisi-${key}"></span>
-              <span>${escapeHtml(cleanVal)}</span>
+              <span class="divisi-option-icon icon-divisi-${fixedOption.key}"><i class="${fixedOption.icon}"></i></span>
+              <span class="divisi-name-text">${escapeHtml(fixedOption.name)}</span>
             </div>
           `;
-        } else {
-          valWrap.innerHTML = `<span class="divisi-placeholder" style="color: var(--text-muted);">Pilih Divisi Penanggung Jawab</span>`;
+        }
+      }
+    } else {
+      // Opsi "Lainnya" / Divisi Kustom
+      this.hiddenInput.value = "Lainnya";
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.remove("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.setAttribute("required", "required");
+        if (cleanVal !== "Lainnya") {
+          this.lainnyaInput.value = cleanVal;
+        }
+        setTimeout(() => {
+          if (cleanVal === "Lainnya") this.lainnyaInput.focus();
+        }, 100);
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          const isMatch = opt.getAttribute("data-value") === "Lainnya";
+          opt.classList.toggle("selected", isMatch);
+          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+        });
+      }
+      if (this.trigger) {
+        const valWrap = this.trigger.querySelector(".custom-select-value");
+        if (valWrap) {
+          valWrap.innerHTML = `
+            <div class="divisi-selected-display">
+              <span class="divisi-option-icon icon-divisi-lainnya"><i class="fa-solid fa-ellipsis"></i></span>
+              <span class="divisi-name-text">${cleanVal !== "Lainnya" ? escapeHtml(cleanVal) : "Lainnya"}</span>
+            </div>
+          `;
         }
       }
     }
   },
 
   getValue() {
-    return this.hiddenInput ? this.hiddenInput.value : "";
+    if (!this.hiddenInput) return "";
+    if (this.hiddenInput.value === "Lainnya") {
+      return this.lainnyaInput ? this.lainnyaInput.value.trim() : "";
+    }
+    return this.hiddenInput.value;
   },
 
   reset() {
@@ -1615,11 +1834,13 @@ const Modal = {
     const deleteModal = document.getElementById("deleteModal");
     const adminLoginModal = document.getElementById("adminLoginModal");
     const emailSubscribeModal = document.getElementById("emailSubscribeModal");
+    const archiveModal = document.getElementById("archiveModal");
     const isEventOpen = eventModal && !eventModal.classList.contains("hidden");
     const isDeleteOpen = deleteModal && !deleteModal.classList.contains("hidden");
     const isAdminLoginOpen = adminLoginModal && !adminLoginModal.classList.contains("hidden");
     const isEmailOpen = emailSubscribeModal && !emailSubscribeModal.classList.contains("hidden");
-    if (!isEventOpen && !isDeleteOpen && !isAdminLoginOpen && !isEmailOpen) {
+    const isArchiveOpen = archiveModal && !archiveModal.classList.contains("hidden");
+    if (!isEventOpen && !isDeleteOpen && !isAdminLoginOpen && !isEmailOpen && !isArchiveOpen) {
       document.body.classList.remove("modal-open");
     }
   },
@@ -1824,7 +2045,7 @@ function validateEventForm(formData) {
   }
 
   if (!formData.divisi || formData.divisi.trim() === "") {
-    return "Divisi Penanggung Jawab wajib dipilih.";
+    return "Divisi Penanggung Jawab wajib dipilih / diisi.";
   }
 
   if (!formData.tanggal_mulai) {
@@ -1862,16 +2083,19 @@ async function handleFormSubmit(e) {
 
   const id = document.getElementById("eventId").value;
   const statusEl = document.getElementById("eventStatus");
-  const divisiEl = document.getElementById("eventDivisi");
   const prokerEl = document.getElementById("eventProker");
   const petugasEl = document.getElementById("eventPetugas");
+
+  const selectedDivisi = (typeof DivisiDropdown !== "undefined" && typeof DivisiDropdown.getValue === "function")
+    ? DivisiDropdown.getValue()
+    : (document.getElementById("eventDivisi") ? document.getElementById("eventDivisi").value.trim() : "");
 
   const formData = {
     id: id || undefined,
     judul: document.getElementById("eventJudul").value.trim(),
     deskripsi: document.getElementById("eventDeskripsi").value.trim(),
     lokasi: document.getElementById("eventLokasi").value.trim(),
-    divisi: divisiEl ? divisiEl.value.trim() : "",
+    divisi: selectedDivisi,
     proker: prokerEl ? prokerEl.value.trim() : "",
     petugas: petugasEl ? petugasEl.value.trim() : "",
     status: statusEl ? statusEl.value : "confirmed",
@@ -2046,6 +2270,10 @@ const Auth = {
 
     if (showToast) {
       Toast.show("Anda telah keluar dari Mode Admin. Mode Tamu aktif.", "info");
+    }
+
+    if (typeof ArchiveModal !== "undefined") {
+      ArchiveModal.cachedItems = null;
     }
   },
 
@@ -2321,6 +2549,9 @@ function initializeEvents() {
       }
       if (typeof EmailSubscribeModal !== "undefined") {
         EmailSubscribeModal.close();
+      }
+      if (typeof ArchiveModal !== "undefined") {
+        ArchiveModal.close();
       }
       AdminLoginModal.close();
       Modal.closeModal();
@@ -2804,6 +3035,468 @@ const EmailSubscribeModal = {
 };
 
 // ==========================================================================
+// CONTROLLER MODAL RIWAYAT & ARSIP KEGIATAN (ADMIN COMPLETION REVIEW)
+// ==========================================================================
+const ArchiveModal = {
+  items: [],
+  cachedItems: null,
+  isLoading: false,
+
+  init() {
+    const openBtn = document.getElementById("openArchiveModalBtn");
+    const closeBtn = document.getElementById("closeArchiveModalBtn");
+    const closeBottomBtn = document.getElementById("closeArchiveBottomBtn");
+    const refreshBtn = document.getElementById("refreshArchiveBtn");
+    const modalEl = document.getElementById("archiveModal");
+
+    if (openBtn) openBtn.addEventListener("click", () => this.open());
+    if (closeBtn) closeBtn.addEventListener("click", () => this.close());
+    if (closeBottomBtn) closeBottomBtn.addEventListener("click", () => this.close());
+    if (refreshBtn) refreshBtn.addEventListener("click", () => this.loadArchiveData(true));
+
+    if (modalEl) {
+      let isBackdropDown = false;
+      modalEl.addEventListener("mousedown", (e) => {
+        isBackdropDown = (e.target === modalEl);
+      });
+      modalEl.addEventListener("click", (e) => {
+        if (isBackdropDown && e.target === modalEl) {
+          this.close();
+        }
+        isBackdropDown = false;
+      });
+    }
+
+    // Tutup dropdown kustom status pada kartu arsip saat klik di luar
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest(".archive-custom-select")) {
+        document.querySelectorAll(".archive-custom-select.open").forEach(el => {
+          el.classList.remove("open");
+          const optList = el.querySelector(".archive-custom-options");
+          if (optList) optList.classList.add("hidden");
+          const trg = el.querySelector(".archive-status-trigger");
+          if (trg) {
+            trg.classList.remove("active");
+            trg.setAttribute("aria-expanded", "false");
+          }
+          const parentCard = el.closest(".archive-card");
+          if (parentCard) parentCard.classList.remove("dropdown-open");
+        });
+      }
+    });
+  },
+
+  open() {
+    if (!AuthState.isAdmin) {
+      Toast.show("Fitur Riwayat Kegiatan memerlukan hak akses Administrator. Silakan login terlebih dahulu.", "warning");
+      AdminLoginModal.open();
+      return;
+    }
+
+    const modal = document.getElementById("archiveModal");
+    if (!modal) return;
+
+    modal.classList.remove("hidden");
+    Modal.lockScroll();
+
+    // Jika data sudah tersedia di cache sesi, tampilkan seketika (0ms delay)
+    if (this.cachedItems !== null) {
+      this.items = this.cachedItems;
+      const loadingState = document.getElementById("archiveLoadingState");
+      const emptyState = document.getElementById("archiveEmptyState");
+      const totalText = document.getElementById("archiveTotalText");
+
+      if (loadingState) loadingState.classList.add("hidden");
+
+      if (this.items.length === 0) {
+        if (emptyState) emptyState.classList.remove("hidden");
+        if (totalText) totalText.textContent = "Total 0 kegiatan terarsip";
+        this.updateStats([]);
+      } else {
+        if (emptyState) emptyState.classList.add("hidden");
+        if (totalText) totalText.textContent = `Total ${this.items.length} kegiatan terarsip`;
+        this.renderList(this.items);
+        this.updateStats(this.items);
+      }
+    } else {
+      this.loadArchiveData(false);
+    }
+  },
+
+  close() {
+    const modal = document.getElementById("archiveModal");
+    if (modal) modal.classList.add("hidden");
+    Modal.unlockScroll();
+  },
+
+  async loadArchiveData(forceRefresh = true) {
+    const loadingState = document.getElementById("archiveLoadingState");
+    const emptyState = document.getElementById("archiveEmptyState");
+    const listContainer = document.getElementById("archiveListContainer");
+    const totalText = document.getElementById("archiveTotalText");
+    const refreshBtn = document.getElementById("refreshArchiveBtn");
+
+    if (loadingState) loadingState.classList.remove("hidden");
+    if (emptyState) emptyState.classList.add("hidden");
+    if (listContainer && forceRefresh) listContainer.innerHTML = "";
+    if (totalText) totalText.textContent = "Memuat data arsip...";
+    if (refreshBtn) refreshBtn.classList.add("btn-spinning");
+
+    try {
+      this.isLoading = true;
+      const data = await ApiClient.getArchiveEvents();
+      this.items = Array.isArray(data) ? data : [];
+      this.cachedItems = this.items;
+
+      if (loadingState) loadingState.classList.add("hidden");
+
+      if (this.items.length === 0) {
+        if (emptyState) emptyState.classList.remove("hidden");
+        if (totalText) totalText.textContent = "Total 0 kegiatan terarsip";
+        this.updateStats([]);
+      } else {
+        if (emptyState) emptyState.classList.add("hidden");
+        if (totalText) totalText.textContent = `Total ${this.items.length} kegiatan terarsip`;
+        this.renderList(this.items);
+        this.updateStats(this.items);
+      }
+    } catch (err) {
+      console.error("Gagal memuat data arsip:", err);
+      if (loadingState) loadingState.classList.add("hidden");
+      if (emptyState) emptyState.classList.remove("hidden");
+      if (totalText) totalText.textContent = "Gagal memuat arsip";
+      Toast.show(err.message || "Gagal mengambil data arsip kegiatan", "error");
+    } finally {
+      this.isLoading = false;
+      if (refreshBtn) refreshBtn.classList.remove("btn-spinning");
+    }
+  },
+
+  updateStats(items) {
+    let terlaksana = 0;
+    let tidak = 0;
+    let belum = 0;
+
+    items.forEach(it => {
+      const st = String(it.status_pelaksanaan || "").trim();
+      if (st === "Terlaksana") terlaksana++;
+      else if (st === "Tidak Terlaksana") tidak++;
+      else belum++;
+    });
+
+    const statTerlaksana = document.querySelector("#statTerlaksana .stat-count");
+    const statTidak = document.querySelector("#statTidak .stat-count");
+    const statBelum = document.querySelector("#statBelum .stat-count");
+
+    if (statTerlaksana) statTerlaksana.textContent = terlaksana;
+    if (statTidak) statTidak.textContent = tidak;
+    if (statBelum) statBelum.textContent = belum;
+  },
+
+  renderList(items) {
+    const listContainer = document.getElementById("archiveListContainer");
+    if (!listContainer) return;
+
+    listContainer.innerHTML = "";
+
+    // Urutkan berdasarkan tanggal selesai terbaru
+    const sorted = [...items].sort((a, b) => {
+      const dateA = (a.tanggal_selesai || a.tanggal_mulai || "") + " " + (a.jam_selesai || "00:00");
+      const dateB = (b.tanggal_selesai || b.tanggal_mulai || "") + " " + (b.jam_selesai || "00:00");
+      return dateB.localeCompare(dateA);
+    });
+
+    sorted.forEach(item => {
+      const card = document.createElement("div");
+      card.className = "archive-card";
+      card.setAttribute("data-archive-id", item.id);
+
+      const divisiInfo = getDivisiInfo(item.divisi) || {
+        name: item.divisi || "Bersama / Proker Bersama",
+        key: "bersama",
+        icon: "fa-solid fa-people-group"
+      };
+
+      const dateRangeStr = DateHelper.formatDateRange(item.tanggal_mulai, item.tanggal_selesai);
+      const timeRangeStr = (item.jam_mulai && item.jam_selesai) ? `${item.jam_mulai} - ${item.jam_selesai} WITA` : "";
+
+      const currentStatus = item.status_pelaksanaan || "Belum Dinilai";
+      const currentKeterangan = item.keterangan_pelaksanaan || "";
+
+      let badgeClass = "status-belum";
+      let badgeIcon = "fa-regular fa-clock";
+      if (currentStatus === "Terlaksana") {
+        badgeClass = "status-terlaksana";
+        badgeIcon = "fa-solid fa-circle-check";
+      } else if (currentStatus === "Tidak Terlaksana") {
+        badgeClass = "status-tidak";
+        badgeIcon = "fa-solid fa-circle-xmark";
+      }
+
+      card.innerHTML = `
+        <div class="archive-card-top">
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span class="divisi-badge divisi-${divisiInfo.key}">
+              <i class="${divisiInfo.icon}"></i>
+              <span>${escapeHtml(divisiInfo.name)}</span>
+            </span>
+            <span class="archive-status-badge ${badgeClass}" data-role="status-badge">
+              <i class="${badgeIcon}"></i>
+              <span class="status-badge-text">${escapeHtml(currentStatus)}</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="archive-card-body">
+          <h4 class="archive-card-title">${escapeHtml(item.judul)}</h4>
+          ${item.deskripsi ? `<p class="archive-card-desc">${escapeHtml(item.deskripsi)}</p>` : ""}
+
+          <div class="event-meta-grid" style="margin-top: 0.625rem; font-size: 0.8125rem;">
+            <div class="meta-item" title="Rentang Tanggal">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>${escapeHtml(dateRangeStr)}</span>
+            </div>
+            ${timeRangeStr ? `
+            <div class="meta-item" title="Waktu Pelaksanaan">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+              <span>${escapeHtml(timeRangeStr)}</span>
+            </div>` : ""}
+            ${item.lokasi ? `
+            <div class="meta-item" title="Lokasi Kegiatan">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>${escapeHtml(item.lokasi)}</span>
+            </div>` : ""}
+            ${item.proker ? `
+            <div class="meta-item" title="Program Kerja">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Proker: ${escapeHtml(item.proker)}</span>
+            </div>` : ""}
+            ${item.petugas ? `
+            <div class="meta-item" title="Petugas / Penanggung Jawab">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span>Petugas: ${escapeHtml(item.petugas)}</span>
+            </div>` : ""}
+          </div>
+        </div>
+
+        <div class="archive-card-divider"></div>
+
+        <!-- Form Evaluasi Vertikal (Clean Stacked Form) -->
+        <div class="archive-eval-section">
+          <div class="form-group" style="margin-bottom: 0.875rem;">
+            <label class="form-label" style="font-size: 0.8125rem; margin-bottom: 0.35rem;">Status Pelaksanaan</label>
+            <div class="custom-select-wrap archive-custom-select">
+              <button type="button" class="form-control custom-select-trigger archive-status-trigger" aria-haspopup="listbox" aria-expanded="false">
+                <div class="custom-select-value">
+                  <span class="trigger-badge ${badgeClass}">
+                    <i class="${badgeIcon}"></i>
+                    <span class="trigger-status-text">${escapeHtml(currentStatus)}</span>
+                  </span>
+                </div>
+                <svg class="custom-select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul class="custom-select-options archive-custom-options hidden" role="listbox">
+                <li class="custom-select-option ${currentStatus === 'Belum Dinilai' ? 'selected' : ''}" role="option" data-value="Belum Dinilai" tabindex="0">
+                  <span class="status-option-badge" style="background-color: var(--bg-subtle); color: var(--text-muted);"><i class="fa-regular fa-clock"></i></span>
+                  <div class="option-text"><span class="option-title">Belum Dinilai</span></div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </li>
+                <li class="custom-select-option ${currentStatus === 'Terlaksana' ? 'selected' : ''}" role="option" data-value="Terlaksana" tabindex="0">
+                  <span class="status-option-badge" style="background-color: var(--primary-light); color: var(--primary);"><i class="fa-solid fa-circle-check"></i></span>
+                  <div class="option-text"><span class="option-title">Terlaksana</span></div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </li>
+                <li class="custom-select-option ${currentStatus === 'Tidak Terlaksana' ? 'selected' : ''}" role="option" data-value="Tidak Terlaksana" tabindex="0">
+                  <span class="status-option-badge" style="background-color: var(--danger-light); color: var(--danger);"><i class="fa-solid fa-circle-xmark"></i></span>
+                  <div class="option-text"><span class="option-title">Tidak Terlaksana</span></div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </li>
+              </ul>
+              <input type="hidden" class="archive-status-input" value="${escapeHtml(currentStatus)}">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0.875rem;">
+            <label class="form-label" style="font-size: 0.8125rem; margin-bottom: 0.35rem;">Keterangan / Catatan Evaluasi</label>
+            <textarea class="form-control archive-keterangan-textarea" rows="2" placeholder="Tulis catatan evaluasi atau kendala kegiatan...">${escapeHtml(currentKeterangan)}</textarea>
+          </div>
+
+          <div class="archive-actions-row">
+            <button type="button" class="btn btn-primary archive-save-btn">
+              <span class="btn-text">Simpan Evaluasi</span>
+              <span class="btn-spinner hidden"></span>
+            </button>
+          </div>
+        </div>
+      `;
+
+      this.attachCardEvents(card, item);
+      listContainer.appendChild(card);
+    });
+  },
+
+  attachCardEvents(card, item) {
+    const selectWrap = card.querySelector(".archive-custom-select");
+    const trigger = card.querySelector(".archive-status-trigger");
+    const optionsList = card.querySelector(".archive-custom-options");
+    const options = card.querySelectorAll(".custom-select-option");
+    const hiddenInput = card.querySelector(".archive-status-input");
+    const triggerText = card.querySelector(".trigger-status-text");
+    const triggerBadge = card.querySelector(".trigger-badge");
+    const triggerIcon = triggerBadge.querySelector("i");
+    const topBadge = card.querySelector("[data-role='status-badge']");
+    const topBadgeText = topBadge.querySelector(".status-badge-text");
+    const topBadgeIcon = topBadge.querySelector("i");
+    const textarea = card.querySelector(".archive-keterangan-textarea");
+    const saveBtn = card.querySelector(".archive-save-btn");
+    const btnSpinner = saveBtn.querySelector(".btn-spinner");
+    const btnText = saveBtn.querySelector(".btn-text");
+
+    // Toggle dropdown
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = selectWrap.classList.contains("open");
+
+      // Close all other open dropdowns in archive cards
+      document.querySelectorAll(".archive-custom-select.open").forEach(el => {
+        if (el !== selectWrap) {
+          el.classList.remove("open");
+          const optList = el.querySelector(".archive-custom-options");
+          if (optList) optList.classList.add("hidden");
+          const trg = el.querySelector(".archive-status-trigger");
+          if (trg) {
+            trg.classList.remove("active");
+            trg.setAttribute("aria-expanded", "false");
+          }
+          const parentCard = el.closest(".archive-card");
+          if (parentCard) parentCard.classList.remove("dropdown-open");
+        }
+      });
+
+      const parentCard = selectWrap.closest(".archive-card");
+
+      if (isOpen) {
+        selectWrap.classList.remove("open");
+        optionsList.classList.add("hidden");
+        trigger.classList.remove("active");
+        trigger.setAttribute("aria-expanded", "false");
+        if (parentCard) parentCard.classList.remove("dropdown-open");
+      } else {
+        selectWrap.classList.add("open");
+        optionsList.classList.remove("hidden");
+        trigger.classList.add("active");
+        trigger.setAttribute("aria-expanded", "true");
+        if (parentCard) parentCard.classList.add("dropdown-open");
+
+        // Scroll smooth jika opsi berada dekat bagian bawah container
+        setTimeout(() => {
+          optionsList.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 50);
+      }
+    });
+
+    // Pilihan opsi status
+    options.forEach(opt => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const val = opt.getAttribute("data-value");
+        hiddenInput.value = val;
+
+        options.forEach(o => {
+          o.classList.remove("selected");
+          o.setAttribute("aria-selected", "false");
+        });
+        opt.classList.add("selected");
+        opt.setAttribute("aria-selected", "true");
+
+        // Update trigger UI
+        triggerText.textContent = val;
+        let bClass = "status-belum";
+        let bIcon = "fa-regular fa-clock";
+        if (val === "Terlaksana") {
+          bClass = "status-terlaksana";
+          bIcon = "fa-solid fa-circle-check";
+        } else if (val === "Tidak Terlaksana") {
+          bClass = "status-tidak";
+          bIcon = "fa-solid fa-circle-xmark";
+        }
+
+        triggerBadge.className = `trigger-badge ${bClass}`;
+        triggerIcon.className = bIcon;
+
+        // Update badge pada header kartu
+        topBadge.className = `archive-status-badge ${bClass}`;
+        topBadgeText.textContent = val;
+        topBadgeIcon.className = bIcon;
+
+        selectWrap.classList.remove("open");
+        optionsList.classList.add("hidden");
+        trigger.classList.remove("active");
+        trigger.setAttribute("aria-expanded", "false");
+        const parentCard = selectWrap.closest(".archive-card");
+        if (parentCard) parentCard.classList.remove("dropdown-open");
+      });
+    });
+
+    // Simpan evaluasi status & keterangan
+    saveBtn.addEventListener("click", async () => {
+      const statusVal = hiddenInput.value;
+      const ketVal = textarea.value.trim();
+
+      try {
+        saveBtn.disabled = true;
+        btnSpinner.classList.remove("hidden");
+        btnText.textContent = "Menyimpan...";
+
+        const res = await ApiClient.updateArchiveStatus(item.id, statusVal, ketVal);
+
+        // Update item lokal & cache sesi
+        item.status_pelaksanaan = statusVal;
+        item.keterangan_pelaksanaan = ketVal;
+        if (ArchiveModal.cachedItems) {
+          const cached = ArchiveModal.cachedItems.find(c => c.id === item.id);
+          if (cached) {
+            cached.status_pelaksanaan = statusVal;
+            cached.keterangan_pelaksanaan = ketVal;
+          }
+        }
+
+        Toast.show(res.message || "Evaluasi status kegiatan berhasil disimpan!", "success");
+        this.updateStats(this.items);
+      } catch (err) {
+        console.error("Gagal update status arsip:", err);
+        Toast.show(err.message || "Gagal menyimpan evaluasi status kegiatan", "error");
+      } finally {
+        saveBtn.disabled = false;
+        btnSpinner.classList.add("hidden");
+        btnText.textContent = "Simpan Evaluasi";
+      }
+    });
+  }
+};
+
+// ==========================================================================
 // CONTROLLER NAVBAR & MOBILE DROPDOWN
 // ==========================================================================
 const NavbarManager = {
@@ -2975,11 +3668,13 @@ const AutoRefresh = {
     const deleteModal = document.getElementById("deleteModal");
     const adminLoginModal = document.getElementById("adminLoginModal");
     const emailSubscribeModal = document.getElementById("emailSubscribeModal");
+    const archiveModal = document.getElementById("archiveModal");
     const isEventModalOpen = eventModal && !eventModal.classList.contains("hidden");
     const isDeleteModalOpen = deleteModal && !deleteModal.classList.contains("hidden");
     const isAdminLoginOpen = adminLoginModal && !adminLoginModal.classList.contains("hidden");
     const isEmailModalOpen = emailSubscribeModal && !emailSubscribeModal.classList.contains("hidden");
-    return isEventModalOpen || isDeleteModalOpen || isAdminLoginOpen || isEmailModalOpen;
+    const isArchiveModalOpen = archiveModal && !archiveModal.classList.contains("hidden");
+    return isEventModalOpen || isDeleteModalOpen || isAdminLoginOpen || isEmailModalOpen || isArchiveModalOpen;
   },
 
   /**
@@ -3011,6 +3706,7 @@ document.addEventListener("DOMContentLoaded", () => {
   DivisiDropdown.init();
   NotificationManager.init();
   EmailSubscribeModal.init();
+  ArchiveModal.init();
   FormPickers.init();
 
   // Inisialisasi tanggal terpilih ke hari ini

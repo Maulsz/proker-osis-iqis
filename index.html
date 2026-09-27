@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <link rel="stylesheet" href="style.css">
   <script>
     (function () {
@@ -141,7 +142,18 @@
             </button>
           </div>
 
-          <!-- 5. Tombol Tambah Kegiatan (Hanya Tampil saat Mode Admin) -->
+          <!-- 5. Tombol Riwayat / Arsip Kegiatan (Hanya Tampil saat Mode Admin) -->
+          <button id="openArchiveModalBtn" class="navbar-icon-btn btn-archive-icon hidden" type="button"
+            title="Riwayat & Evaluasi Pelaksanaan Kegiatan" aria-label="Riwayat & Evaluasi Pelaksanaan Kegiatan">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </button>
+
+          <!-- 6. Tombol Tambah Kegiatan (Hanya Tampil saat Mode Admin) -->
           <button id="openAddModalBtn" class="navbar-icon-btn btn-add-icon hidden" type="button"
             title="Tambah Kegiatan Baru" aria-label="Tambah Kegiatan Baru">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -492,7 +504,7 @@
                 tabindex="-1">
                 <li class="custom-select-option" role="option" data-value="Keislaman dan Pembinaan Karakter"
                   aria-selected="false" tabindex="0">
-                  <span class="status-indicator-dot dot-divisi-islam"></span>
+                  <span class="divisi-option-icon icon-divisi-islam"><i class="fa-solid fa-mosque"></i></span>
                   <div class="option-text">
                     <span class="option-title">Keislaman dan Pembinaan Karakter</span>
                   </div>
@@ -503,7 +515,7 @@
                 </li>
                 <li class="custom-select-option" role="option" data-value="Kepemimpinan dan Kebahasaan"
                   aria-selected="false" tabindex="0">
-                  <span class="status-indicator-dot dot-divisi-kepemimpinan"></span>
+                  <span class="divisi-option-icon icon-divisi-kepemimpinan"><i class="fa-solid fa-language"></i></span>
                   <div class="option-text">
                     <span class="option-title">Kepemimpinan dan Kebahasaan</span>
                   </div>
@@ -514,7 +526,7 @@
                 </li>
                 <li class="custom-select-option" role="option" data-value="Komunikasi Media Kreatif"
                   aria-selected="false" tabindex="0">
-                  <span class="status-indicator-dot dot-divisi-media"></span>
+                  <span class="divisi-option-icon icon-divisi-media"><i class="fa-solid fa-photo-film"></i></span>
                   <div class="option-text">
                     <span class="option-title">Komunikasi Media Kreatif</span>
                   </div>
@@ -525,7 +537,7 @@
                 </li>
                 <li class="custom-select-option" role="option" data-value="Kewirausahaan dan Sosial Lingkungan"
                   aria-selected="false" tabindex="0">
-                  <span class="status-indicator-dot dot-divisi-wirausaha"></span>
+                  <span class="divisi-option-icon icon-divisi-wirausaha"><i class="fa-solid fa-seedling"></i></span>
                   <div class="option-text">
                     <span class="option-title">Kewirausahaan dan Sosial Lingkungan</span>
                   </div>
@@ -536,7 +548,7 @@
                 </li>
                 <li class="custom-select-option" role="option" data-value="Bersama / Proker Bersama"
                   aria-selected="false" tabindex="0">
-                  <span class="status-indicator-dot dot-divisi-bersama"></span>
+                  <span class="divisi-option-icon icon-divisi-bersama"><i class="fa-solid fa-people-group"></i></span>
                   <div class="option-text">
                     <span class="option-title">Bersama / Proker Bersama</span>
                   </div>
@@ -545,7 +557,23 @@
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </li>
+                <li class="custom-select-option" role="option" data-value="Lainnya"
+                  aria-selected="false" tabindex="0">
+                  <span class="divisi-option-icon icon-divisi-lainnya"><i class="fa-solid fa-ellipsis"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Lainnya</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
               </ul>
+            </div>
+            <!-- Input Tambahan jika Divisi 'Lainnya' dipilih -->
+            <div id="divisiLainnyaWrap" class="form-group hidden" style="margin-top: 0.625rem;">
+              <input type="text" id="eventDivisiLainnya" class="form-control"
+                placeholder="Tulis nama divisi/kelompok lain..." maxlength="60">
             </div>
           </div>
 
@@ -847,6 +875,87 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Dialog: Riwayat & Arsip Kegiatan (Admin Completion Review) -->
+  <div id="archiveModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="archiveModalTitle">
+    <div class="modal-dialog modal-archive">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 0.625rem;">
+          <div class="admin-modal-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </div>
+          <h3 id="archiveModalTitle">Riwayat & Evaluasi Pelaksanaan Kegiatan</h3>
+        </div>
+        <button id="closeArchiveModalBtn" class="modal-close" aria-label="Tutup modal riwayat kegiatan">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Summary Bar & Statistik Pelaksanaan -->
+        <div class="archive-summary-bar">
+          <span id="archiveTotalText">Memuat riwayat kegiatan...</span>
+          <div class="archive-stats-group">
+            <span id="statTerlaksana" class="archive-stat-chip stat-chip-terlaksana">
+              <i class="fa-solid fa-circle-check"></i> <span class="stat-count">0</span> Terlaksana
+            </span>
+            <span id="statTidak" class="archive-stat-chip stat-chip-tidak">
+              <i class="fa-solid fa-circle-xmark"></i> <span class="stat-count">0</span> Tidak Terlaksana
+            </span>
+            <span id="statBelum" class="archive-stat-chip stat-chip-belum">
+              <i class="fa-solid fa-clock"></i> <span class="stat-count">0</span> Belum Dinilai
+            </span>
+          </div>
+        </div>
+
+        <!-- Daftar Item Arsip -->
+        <div id="archiveListContainer" class="archive-list">
+          <!-- Item kartu riwayat akan di-render di sini oleh script.js -->
+        </div>
+
+        <!-- Loading State Arsip -->
+        <div id="archiveLoadingState" class="archive-loading-wrap hidden">
+          <div class="archive-spinner-large"></div>
+          <p class="archive-loading-text">Memuat Riwayat Kegiatan...</p>
+          <p class="archive-loading-subtext">Mengambil data riwayat & evaluasi dari server...</p>
+        </div>
+
+        <!-- Empty State Arsip -->
+        <div id="archiveEmptyState" class="empty-state hidden" style="padding: 2.5rem 1rem;">
+          <div class="empty-state-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="21 8 21 21 3 21 3 8"></polyline>
+              <rect x="1" y="3" width="22" height="5"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+          </div>
+          <h4>Belum Ada Arsip Kegiatan</h4>
+          <p>Kegiatan yang telah berakhir lebih dari 24 jam akan otomatis dipindahkan ke tab Arsip.</p>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="refreshArchiveBtn" class="btn btn-secondary">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2" />
+          </svg>
+          <span>Segarkan</span>
+        </button>
+        <button type="button" id="closeArchiveBottomBtn" class="btn btn-primary">Tutup</button>
+      </div>
     </div>
   </div>
 
