@@ -1120,7 +1120,7 @@ const UI = {
       ` : "";
 
       return `
-      <div class="event-card${borderClass}${isTentative ? " status-tentative" : ""}" data-id="${event.id}">
+      <div class="event-card${borderClass}${isTentative ? " status-tentative" : ""}" data-id="${event.id}" tabindex="0" role="button" aria-label="Detail kegiatan ${escapeHtml(event.judul)}">
         <div class="event-card-header">
           <div style="display: flex; flex-direction: column; gap: 0.35rem; min-width: 0;">
             <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -1186,6 +1186,26 @@ const UI = {
       </div>
     `;
     }).join("");
+
+    // Pasang listener klik dan keyboard pada kartu kegiatan untuk membuka modal detail
+    container.querySelectorAll(".event-card").forEach(card => {
+      const id = card.getAttribute("data-id");
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".action-btn")) return;
+        if (typeof EventDetailModal !== "undefined") {
+          EventDetailModal.open(id, card);
+        }
+      });
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          if (e.target.closest(".action-btn")) return;
+          e.preventDefault();
+          if (typeof EventDetailModal !== "undefined") {
+            EventDetailModal.open(id, card);
+          }
+        }
+      });
+    });
 
     // Pasang listener pada tombol aksi Edit & Delete jika ada
     container.querySelectorAll(".edit-btn").forEach(btn => {
@@ -1835,13 +1855,33 @@ const Modal = {
     const adminLoginModal = document.getElementById("adminLoginModal");
     const emailSubscribeModal = document.getElementById("emailSubscribeModal");
     const archiveModal = document.getElementById("archiveModal");
+    const eventDetailModal = document.getElementById("eventDetailModal");
     const isEventOpen = eventModal && !eventModal.classList.contains("hidden");
     const isDeleteOpen = deleteModal && !deleteModal.classList.contains("hidden");
     const isAdminLoginOpen = adminLoginModal && !adminLoginModal.classList.contains("hidden");
     const isEmailOpen = emailSubscribeModal && !emailSubscribeModal.classList.contains("hidden");
     const isArchiveOpen = archiveModal && !archiveModal.classList.contains("hidden");
-    if (!isEventOpen && !isDeleteOpen && !isAdminLoginOpen && !isEmailOpen && !isArchiveOpen) {
+    const isDetailOpen = eventDetailModal && !eventDetailModal.classList.contains("hidden");
+    if (!isEventOpen && !isDeleteOpen && !isAdminLoginOpen && !isEmailOpen && !isArchiveOpen && !isDetailOpen) {
       document.body.classList.remove("modal-open");
+    }
+  },
+
+  /**
+   * Membuka modal detail kegiatan
+   */
+  openDetailModal(id, triggerEl = null) {
+    if (typeof EventDetailModal !== "undefined") {
+      EventDetailModal.open(id, triggerEl);
+    }
+  },
+
+  /**
+   * Menutup modal detail kegiatan
+   */
+  closeDetailModal() {
+    if (typeof EventDetailModal !== "undefined") {
+      EventDetailModal.close();
     }
   },
 
@@ -2008,6 +2048,10 @@ async function loadEventsData(isSilent = false) {
     UI.renderCalendar();
     UI.renderSelectedDateAgenda();
     UI.renderUpcomingEvents();
+
+    if (typeof EventDetailModal !== "undefined" && EventDetailModal.isOpen) {
+      EventDetailModal.sync();
+    }
 
     if (isSilent) {
       UI.updateConnectionBadge();
@@ -2242,6 +2286,9 @@ const Auth = {
 
     UI.updateAuthUI();
     UI.renderSelectedDateAgenda(); // Render ulang kartu untuk memunculkan tombol Edit & Hapus
+    if (typeof EventDetailModal !== "undefined" && EventDetailModal.isOpen) {
+      EventDetailModal.sync();
+    }
   },
 
   /**
@@ -2268,6 +2315,10 @@ const Auth = {
     UI.updateAuthUI();
     UI.renderSelectedDateAgenda(); // Sembunyikan tombol Edit & Hapus
 
+    if (typeof EventDetailModal !== "undefined" && EventDetailModal.isOpen) {
+      EventDetailModal.sync();
+    }
+
     if (showToast) {
       Toast.show("Anda telah keluar dari Mode Admin. Mode Tamu aktif.", "info");
     }
@@ -2284,7 +2335,228 @@ const Auth = {
     this.logout(false);
     Modal.closeModal();
     Modal.closeDeleteModal();
+    if (typeof EventDetailModal !== "undefined") {
+      EventDetailModal.close();
+    }
     Toast.show("Sesi admin telah kedaluwarsa. Silakan login kembali dengan PIN Admin.", "error");
+  }
+};
+
+// ==========================================================================
+// CONTROLLER MODAL DETAIL KEGIATAN (READ-ONLY EVENT DETAIL)
+// ==========================================================================
+const EventDetailModal = {
+  currentEventId: null,
+  lastFocusedElement: null,
+
+  get isOpen() {
+    const modal = document.getElementById("eventDetailModal");
+    return !!(modal && !modal.classList.contains("hidden"));
+  },
+
+  init() {
+    const modalEl = document.getElementById("eventDetailModal");
+    const closeBtn = document.getElementById("closeDetailModalBtn");
+    const closeBottomBtn = document.getElementById("closeDetailBottomBtn");
+    const editBtn = document.getElementById("detailEditBtn");
+    const deleteBtn = document.getElementById("detailDeleteBtn");
+
+    if (closeBtn) closeBtn.addEventListener("click", () => this.close());
+    if (closeBottomBtn) closeBottomBtn.addEventListener("click", () => this.close());
+
+    if (editBtn) {
+      editBtn.addEventListener("click", () => {
+        const id = this.currentEventId;
+        this.close();
+        if (id) Modal.openEditModal(id);
+      });
+    }
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", () => {
+        const id = this.currentEventId;
+        this.close();
+        if (id) Modal.openDeleteModal(id);
+      });
+    }
+
+    if (modalEl) {
+      let isBackdropDown = false;
+      modalEl.addEventListener("mousedown", (e) => {
+        isBackdropDown = (e.target === modalEl);
+      });
+      modalEl.addEventListener("click", (e) => {
+        if (isBackdropDown && e.target === modalEl) {
+          this.close();
+        }
+        isBackdropDown = false;
+      });
+    }
+  },
+
+  open(id, triggerEl = null) {
+    const event = AppState.events.find(e => e.id === id);
+    if (!event) {
+      Toast.show("Data kegiatan tidak ditemukan.", "error");
+      return;
+    }
+
+    this.currentEventId = id;
+    this.lastFocusedElement = triggerEl || document.activeElement;
+
+    this.render(event);
+
+    const modal = document.getElementById("eventDetailModal");
+    if (modal) {
+      modal.classList.remove("hidden");
+      Modal.lockScroll();
+      const closeBottomBtn = document.getElementById("closeDetailBottomBtn");
+      if (closeBottomBtn) closeBottomBtn.focus();
+    }
+  },
+
+  render(event) {
+    const titleEl = document.getElementById("detailModalTitle");
+    const statusBadgeEl = document.getElementById("detailStatusBadge");
+    const divisiBadgeEl = document.getElementById("detailDivisiBadge");
+    const descEl = document.getElementById("detailDescription");
+    const tanggalEl = document.getElementById("detailTanggal");
+    const waktuEl = document.getElementById("detailWaktu");
+    const lokasiEl = document.getElementById("detailLokasi");
+    const divisiEl = document.getElementById("detailDivisi");
+    const divisiIconEl = document.getElementById("detailDivisiIcon");
+    const prokerItemEl = document.getElementById("detailProkerItem");
+    const prokerEl = document.getElementById("detailProker");
+    const petugasItemEl = document.getElementById("detailPetugasItem");
+    const petugasEl = document.getElementById("detailPetugas");
+    const adminActionsEl = document.getElementById("detailAdminActions");
+    const dialogEl = document.getElementById("eventDetailDialog");
+
+    // Title
+    if (titleEl) titleEl.textContent = event.judul || "-";
+
+    // Status Badge
+    const isTentative = (event.status || "confirmed").toLowerCase() === "tentative";
+    if (statusBadgeEl) {
+      statusBadgeEl.innerHTML = isTentative
+        ? `<span class="status-badge status-badge-tentative">Rencana</span>`
+        : `<span class="status-badge status-badge-confirmed">Terkonfirmasi</span>`;
+    }
+
+    // Divisi Info & Accent
+    const divInfo = getDivisiInfo(event.divisi);
+    if (divisiBadgeEl) {
+      if (event.divisi && divInfo) {
+        divisiBadgeEl.innerHTML = `<span class="divisi-badge divisi-${divInfo.key}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(event.divisi)}</span></span>`;
+      } else {
+        divisiBadgeEl.innerHTML = "";
+      }
+    }
+
+    if (dialogEl) {
+      // Remove previous border-divisi-* classes
+      dialogEl.className = dialogEl.className.replace(/\bborder-divisi-\S+/g, "").trim();
+      if (divInfo && divInfo.key) {
+        dialogEl.classList.add(`border-divisi-${divInfo.key}`);
+      }
+    }
+
+    // Deskripsi
+    if (descEl) {
+      if (event.deskripsi && event.deskripsi.trim()) {
+        descEl.textContent = event.deskripsi;
+        descEl.classList.remove("detail-empty-text");
+      } else {
+        descEl.textContent = "Tidak ada deskripsi";
+        descEl.classList.add("detail-empty-text");
+      }
+    }
+
+    // Tanggal
+    if (tanggalEl) {
+      let rangeText = DateHelper.formatDateRange(event.tanggal_mulai, event.tanggal_selesai);
+      if (event.tanggal_mulai && event.tanggal_selesai && event.tanggal_mulai !== event.tanggal_selesai) {
+        const d1 = DateHelper.parseLocalDate(event.tanggal_mulai);
+        const d2 = DateHelper.parseLocalDate(event.tanggal_selesai);
+        const diffTime = Math.abs(d2 - d1);
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        if (diffDays > 1) {
+          rangeText += ` (${diffDays} hari)`;
+        }
+      }
+      tanggalEl.textContent = rangeText;
+    }
+
+    // Waktu
+    if (waktuEl) {
+      const start = event.jam_mulai ? event.jam_mulai : "-";
+      const end = event.jam_selesai ? event.jam_selesai : "-";
+      waktuEl.textContent = `${start} - ${end} WITA`;
+    }
+
+    // Lokasi
+    if (lokasiEl) {
+      lokasiEl.textContent = event.lokasi || "Lokasi belum ditentukan";
+    }
+
+    // Divisi Row
+    if (divisiEl) {
+      divisiEl.textContent = event.divisi || "-";
+    }
+    if (divisiIconEl && divInfo) {
+      divisiIconEl.className = divInfo.icon || "fa-solid fa-layer-group";
+    }
+
+    // Proker Row
+    if (prokerItemEl && prokerEl) {
+      if (event.proker && event.proker.trim()) {
+        prokerEl.textContent = event.proker;
+        prokerItemEl.classList.remove("hidden");
+      } else {
+        prokerItemEl.classList.add("hidden");
+      }
+    }
+
+    // Petugas Row
+    if (petugasItemEl && petugasEl) {
+      if (event.petugas && event.petugas.trim()) {
+        petugasEl.textContent = event.petugas;
+        petugasItemEl.classList.remove("hidden");
+      } else {
+        petugasItemEl.classList.add("hidden");
+      }
+    }
+
+    // Admin Action Buttons
+    if (adminActionsEl) {
+      if (AuthState.isAdmin) {
+        adminActionsEl.classList.remove("hidden");
+      } else {
+        adminActionsEl.classList.add("hidden");
+      }
+    }
+  },
+
+  close() {
+    const modal = document.getElementById("eventDetailModal");
+    if (modal) modal.classList.add("hidden");
+    this.currentEventId = null;
+    Modal.unlockScroll();
+
+    if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === "function" && document.contains(this.lastFocusedElement)) {
+      this.lastFocusedElement.focus();
+    }
+    this.lastFocusedElement = null;
+  },
+
+  sync() {
+    if (!this.isOpen || !this.currentEventId) return;
+    const event = AppState.events.find(e => e.id === this.currentEventId);
+    if (event) {
+      this.render(event);
+    } else {
+      this.close();
+    }
   }
 };
 
@@ -2552,6 +2824,9 @@ function initializeEvents() {
       }
       if (typeof ArchiveModal !== "undefined") {
         ArchiveModal.close();
+      }
+      if (typeof EventDetailModal !== "undefined") {
+        EventDetailModal.close();
       }
       AdminLoginModal.close();
       Modal.closeModal();
@@ -3669,12 +3944,14 @@ const AutoRefresh = {
     const adminLoginModal = document.getElementById("adminLoginModal");
     const emailSubscribeModal = document.getElementById("emailSubscribeModal");
     const archiveModal = document.getElementById("archiveModal");
+    const eventDetailModal = document.getElementById("eventDetailModal");
     const isEventModalOpen = eventModal && !eventModal.classList.contains("hidden");
     const isDeleteModalOpen = deleteModal && !deleteModal.classList.contains("hidden");
     const isAdminLoginOpen = adminLoginModal && !adminLoginModal.classList.contains("hidden");
     const isEmailModalOpen = emailSubscribeModal && !emailSubscribeModal.classList.contains("hidden");
     const isArchiveModalOpen = archiveModal && !archiveModal.classList.contains("hidden");
-    return isEventModalOpen || isDeleteModalOpen || isAdminLoginOpen || isEmailModalOpen || isArchiveModalOpen;
+    const isDetailModalOpen = eventDetailModal && !eventDetailModal.classList.contains("hidden");
+    return isEventModalOpen || isDeleteModalOpen || isAdminLoginOpen || isEmailModalOpen || isArchiveModalOpen || isDetailModalOpen;
   },
 
   /**
@@ -3707,6 +3984,7 @@ document.addEventListener("DOMContentLoaded", () => {
   NotificationManager.init();
   EmailSubscribeModal.init();
   ArchiveModal.init();
+  EventDetailModal.init();
   FormPickers.init();
 
   // Inisialisasi tanggal terpilih ke hari ini
