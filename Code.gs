@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- * KALENDER KEGIATAN OSIS - BACKEND GOOGLE APPS SCRIPT DENGAN SISTEM PIN ADMIN
+ * JADWAL PROKER OSIS - BACKEND GOOGLE APPS SCRIPT DENGAN SISTEM PIN ADMIN
  * ============================================================================
- * Proyek: Kalender Kegiatan & Jadwal Program Kerja OSIS (CRUD Web App)
+ * Proyek: Jadwal Proker OSIS (CRUD Web App)
  * Database: Google Sheets (Tab 'Kegiatan' & Tab 'Subscribers')
  * Backend: Google Apps Script Web App
  * Keamanan: Otentikasi & Otorisasi Berbasis PIN Admin (Script Properties & Token)
@@ -105,10 +105,10 @@
  */
 
 // Konfigurasi ID Google Sheet
-var SPREADSHEET_ID = "1A_zE0Of-6Y3Nilj03_Ja7luiThDGcRDMH8Zy5_b_hQU";
+var SPREADSHEET_ID = "1JtHzXqL8Mqfmo63W_k38rnyOjjjUEgkzOpWnJ7MJOfc";
 
 // URL website publik tempat frontend kalender dihosting (digunakan untuk tautan di footer email)
-var SITE_URL = "https://GANTI-DENGAN-URL-WEBSITE-ANDA";
+var SITE_URL = "https://proker-osis-iqis.vercel.app";
 
 // Nama sheet/tab untuk menyimpan data kegiatan
 var SHEET_NAME = "Kegiatan";
@@ -796,7 +796,7 @@ function escapeHtml(str) {
  * Buka Apps Script -> Pilih 'setupAll' -> Klik Run -> Izinkan hak akses (OAuth)
  */
 function setupAll() {
-  console.log("Memulai setup database Kalender Kegiatan OSIS...");
+  console.log("Memulai setup database Jadwal Proker OSIS...");
   var eventsSheet = getOrCreateSheet();
   console.log("Tab 'Kegiatan' siap (jumlah baris: " + eventsSheet.getLastRow() + ", kolom: " + eventsSheet.getLastColumn() + ").");
   var subSheet = getOrCreateSubscribersSheet();
@@ -1561,10 +1561,10 @@ function sendDailyReminderEmails() {
     });
 
     // 3. Susun isi email (Plain Text & HTML)
-    var subject = "Agenda Hari Ini - Kalender Kegiatan OSIS (" + todayIndoFull + ")";
+    var subject = "Agenda Hari Ini - Jadwal Proker OSIS (" + todayIndoFull + ")";
 
     var textLines = [
-      "AGENDA HARI INI - KALENDER KEGIATAN OSIS",
+      "AGENDA HARI INI - JADWAL PROKER OSIS",
       "Tanggal: " + todayIndoFull + " (WITA)",
       "Jumlah Agenda: " + todayEvents.length + " Kegiatan",
       "==================================================",
@@ -1579,7 +1579,6 @@ function sendDailyReminderEmails() {
 
       textLines.push((k + 1) + ". " + ev.judul);
       textLines.push("   - Divisi  : " + (ev.divisi || "-"));
-      if (ev.proker) textLines.push("   - Proker  : " + ev.proker);
       if (ev.petugas) textLines.push("   - Petugas : " + ev.petugas);
       textLines.push("   - Waktu   : " + jamRange);
       textLines.push("   - Lokasi  : " + (ev.lokasi || "-"));
@@ -1594,7 +1593,6 @@ function sendDailyReminderEmails() {
               <td style="width: 80px; font-weight: bold; vertical-align: top;">Divisi</td>
               <td>: ${escapeHtml(ev.divisi || "-")}</td>
             </tr>
-            ${ev.proker ? `<tr><td style="font-weight: bold; vertical-align: top;">Proker</td><td>: ${escapeHtml(ev.proker)}</td></tr>` : ""}
             ${ev.petugas ? `<tr><td style="font-weight: bold; vertical-align: top;">Petugas</td><td>: ${escapeHtml(ev.petugas)}</td></tr>` : ""}
             <tr>
               <td style="font-weight: bold; vertical-align: top;">Waktu</td>
@@ -1612,14 +1610,14 @@ function sendDailyReminderEmails() {
 
     textLines.push("==================================================");
     textLines.push("Kunjungi Website: " + SITE_URL);
-    textLines.push("Pesan ini dikirimkan otomatis oleh Sistem Kalender Kegiatan OSIS.");
+    textLines.push("Pesan ini dikirimkan otomatis oleh Sistem Jadwal Proker OSIS.");
 
     var plainBody = textLines.join("\n");
 
     var htmlBody = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1e293b; background-color: #ffffff;">
         <div style="border-bottom: 2px solid #10b981; padding-bottom: 14px; margin-bottom: 20px;">
-          <h2 style="color: #059669; margin: 0 0 4px 0; font-size: 20px;">Kalender Kegiatan OSIS</h2>
+          <h2 style="color: #059669; margin: 0 0 4px 0; font-size: 20px;">Jadwal Proker OSIS</h2>
           <p style="margin: 0; color: #64748b; font-size: 14px;">Agenda Hari Ini &middot; ${escapeHtml(todayIndoFull)} (WITA)</p>
         </div>
         
@@ -1630,9 +1628,9 @@ function sendDailyReminderEmails() {
         ${htmlEventsList}
 
         <div style="border-top: 1px solid #e2e8f0; margin-top: 28px; padding-top: 16px; font-size: 12px; color: #94a3b8; text-align: center; line-height: 1.5;">
-          <p style="margin: 0 0 6px 0;"><a href="${escapeHtml(SITE_URL)}" style="color: #059669; text-decoration: underline;">Buka Website Kalender Kegiatan OSIS</a></p>
-          <p style="margin: 0 0 4px 0;">Email ini dikirimkan otomatis oleh Sistem Kalender Kegiatan OSIS.</p>
-          <p style="margin: 0;">Untuk berhenti berlangganan, buka website kalender di atas &rarr; klik ikon email di bilah atas &rarr; pilih <em>"Berhenti berlangganan?"</em>.</p>
+          <p style="margin: 0 0 6px 0;"><a href="${escapeHtml(SITE_URL)}" style="color: #059669; text-decoration: underline;">Buka Website Jadwal Proker OSIS</a></p>
+          <p style="margin: 0 0 4px 0;">Email ini dikirimkan otomatis oleh Sistem Jadwal Proker OSIS.</p>
+          <p style="margin: 0;">Untuk berhenti berlangganan, buka website Jadwal Proker OSIS di atas &rarr; klik ikon email di bilah atas &rarr; pilih <em>"Berhenti berlangganan?"</em>.</p>
         </div>
       </div>
     `;

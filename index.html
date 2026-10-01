@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kalender Kegiatan - Jadwal Program Kerja Osis</title>
+  <title>Jadwal Proker OSIS</title>
   <meta name="description"
-    content="Aplikasi Kalender Kegiatan sekolah dengan fitur CRUD lengkap terhubung ke Google Sheets.">
+    content="Aplikasi Jadwal Proker OSIS dengan fitur CRUD lengkap terhubung ke Google Sheets.">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -448,13 +448,13 @@
             <span id="formAlertText">Silakan periksa input form.</span>
           </div>
 
-          <!-- Field Judul -->
+          <!-- Field Nama Program Kerja / Kegiatan -->
           <div class="form-group">
             <label for="eventJudul" class="form-label">
-              Judul Kegiatan <span class="required">*</span>
+              Nama Program Kerja / Kegiatan <span class="required">*</span>
             </label>
             <input type="text" id="eventJudul" class="form-control"
-              placeholder="Contoh: Rapat Koordinasi Uji Kompetensi RPL" required maxlength="120">
+              placeholder="Contoh: Piket Adzan Dzuhur, Rapat Koordinasi Uji Kompetensi RPL, dst" required maxlength="120">
           </div>
 
           <!-- Field Deskripsi -->
@@ -577,37 +577,23 @@
             </div>
           </div>
 
-          <!-- Field Program Kerja (Proker) -->
-          <div class="form-group">
-            <label for="eventProker" class="form-label">
-              Program Kerja (Proker)
-            </label>
-            <div class="input-icon-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-              <input type="text" id="eventProker" class="form-control with-icon"
-                placeholder="Contoh: Piket Adzan Dzuhur, Pelatihan MC, dst" maxlength="120">
-            </div>
-          </div>
 
-          <!-- Field Petugas / Penanggung Jawab -->
-          <div class="form-group">
-            <label for="eventPetugas" class="form-label">
+          <!-- Field Petugas / Penanggung Jawab (Multi-Petugas Dynamic List) -->
+          <div class="form-group" id="petugasGroup">
+            <label class="form-label" id="eventPetugasLabel">
               Petugas / Penanggung Jawab
             </label>
-            <div class="input-icon-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <input type="text" id="eventPetugas" class="form-control with-icon"
-                placeholder="Nama petugas, atau tulis 'Bersama' untuk proker kolektif" maxlength="100">
+            <div id="petugasListContainer" class="petugas-list-container">
+              <!-- Baris petugas dibuat secara dinamis oleh PetugasInputManager -->
+            </div>
+            <div class="petugas-actions-wrap">
+              <button type="button" id="addPetugasBtn" class="btn-add-petugas">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>+ Tambah Petugas Lain</span>
+              </button>
             </div>
           </div>
 
@@ -1051,21 +1037,6 @@
             </div>
           </div>
 
-          <!-- Program Kerja -->
-          <div class="detail-item" id="detailProkerItem">
-            <div class="detail-item-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-            </div>
-            <div class="detail-item-content">
-              <span class="detail-item-label">Program Kerja</span>
-              <span id="detailProker" class="detail-item-value">-</span>
-            </div>
-          </div>
 
           <!-- Petugas / PIC -->
           <div class="detail-item" id="detailPetugasItem">

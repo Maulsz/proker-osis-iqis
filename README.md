@@ -1,6 +1,6 @@
-# 📅 Kalender Kegiatan & Program Kerja OSIS
+# 📅 Jadwal Proker OSIS
 
-Aplikasi web modern **Kalender Kegiatan & Jadwal Program Kerja OSIS** dengan manajemen kegiatan lengkap, sistem otentikasi PIN Administrator berkeamanan token HMAC, notifikasi agenda harian via email otomatis (*daily email digest*), serta riwayat dan evaluasi pelaksanaan program kerja (*auto-archive & evaluation*).
+Aplikasi web modern **Jadwal Proker OSIS** dengan manajemen kegiatan lengkap, sistem otentikasi PIN Administrator berkeamanan token HMAC, notifikasi agenda harian via email otomatis (*daily email digest*), serta riwayat dan evaluasi pelaksanaan program kerja (*auto-archive & evaluation*).
 
 Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScript** di sisi frontend (tanpa framework, tanpa build tools) dan **Google Apps Script Web App** dengan database terstruktur **Google Sheets** di sisi backend.
 
@@ -121,7 +121,7 @@ Ikuti langkah-langkah berikut secara berurutan untuk menyiapkan backend di akun 
 
 ### Langkah 1: Siapkan Google Sheet & Salin Spreadsheet ID
 1. Buat Google Sheet baru di [Google Spreadsheet](https://sheets.new) atau buka spreadsheet yang sudah Anda miliki.
-2. Beri nama spreadsheet Anda, misalnya `Database Kalender OSIS`.
+2. Beri nama spreadsheet Anda, misalnya `Database Jadwal Proker OSIS`.
 3. Perhatikan URL Google Sheet Anda pada bilah alamat browser:
    ```text
    https://docs.google.com/spreadsheets/d/1A_zE0Of-6Y3Nilj03_Ja7luiThDGcRDMH8Zy5_b_hQU/edit
@@ -185,7 +185,7 @@ Fungsi `setupAll` akan secara otomatis membuat tab `Kegiatan`, `Subscribers`, da
 1. Klik tombol biru **Deploy** di pojok kanan atas > pilih **New deployment**.
 2. Klik ikon gerigi ⚙️ di sebelah *"Select type"* > pilih **Web app**.
 3. Konfigurasikan:
-   - **Description**: `Kalender OSIS v1.0`
+   - **Description**: `Jadwal Proker OSIS v1.0`
    - **Execute as**: `Me (email-anda@gmail.com)` *(Wajib: Me)*
    - **Who has access**: `Anyone` *(Wajib: Anyone agar dapat diakses publik tanpa login Google)*
 4. Klik **Deploy**.
@@ -280,7 +280,7 @@ Aplikasi ini dapat di-hosting secara gratis dan cepat di [Vercel](https://vercel
 ### Cara 2: Menghubungkan Repositori GitHub ke Dashboard Vercel
 1. Unggah (*push*) kode proyek Anda ke repositori GitHub.
 2. Buka [Vercel Dashboard](https://vercel.com/dashboard) dan klik **Add New...** > **Project**.
-3. Pilih repositori GitHub proyek kalender Anda.
+3. Pilih repositori GitHub proyek Jadwal Proker OSIS Anda.
 4. Pada bagian **Build and Output Settings**, biarkan kosong (Vercel otomatis mendeteksi situs statis).
 5. Klik **Deploy**. Website Anda langsung aktif dan dapat diakses dari seluruh dunia dengan sertifikat SSL (HTTPS) gratis.
 

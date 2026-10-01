@@ -1,8 +1,8 @@
 /**
  * ============================================================================
- * KALENDER KEGIATAN - FRONTEND LOGIC (Vanilla JavaScript)
+ * JADWAL PROKER OSIS - FRONTEND LOGIC (Vanilla JavaScript)
  * ============================================================================
- * Aplikasi Kalender Kegiatan Sekolah dengan fitur CRUD lengkap.
+ * Aplikasi Jadwal Proker OSIS dengan fitur CRUD lengkap.
  * Terhubung langsung ke Google Apps Script Web App (Database: Google Sheets).
  *
  * INSTRUKSI KONFIGURASI:
@@ -14,7 +14,7 @@
 
 // >>> TEMPELKAN WEB APP URL GOOGLE APPS SCRIPT ANDA DI SINI <<<
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFOPlodNxu0JSQkpDGnZ4wd89ryTAWjA8geQvBOGduYeLJUjc4va9e7iXDfNoaWAam/exec";
-// DEMO DI COPY FILE SPREEDSHETS
+
 
 // Contoh: "https://script.google.com/macros/s/AKfycbxAbCdEfGhIjKlMnOpQrStUvWxYz/exec"
 
@@ -696,7 +696,7 @@ const ApiClient = {
         try {
           const parsed = JSON.parse(cached);
           if (Array.isArray(parsed)) return parsed;
-        } catch (e) {}
+        } catch (e) { }
       }
       const demoArchive = [
         {
@@ -1161,17 +1161,6 @@ const UI = {
             <span>${escapeHtml(event.lokasi || "Lokasi belum ditentukan")}</span>
           </div>
 
-          ${event.proker ? `
-            <div class="meta-item" title="Program Kerja">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-              <span>${escapeHtml(event.proker)}</span>
-            </div>
-          ` : ""}
 
           ${event.petugas ? `
             <div class="meta-item" title="Petugas / Penanggung Jawab">
@@ -1687,6 +1676,170 @@ const DivisiDropdown = {
 };
 
 // ==========================================================================
+// MULTI-PETUGAS DYNAMIC LIST MANAGER
+// ==========================================================================
+const PetugasInputManager = {
+  container: null,
+  addBtn: null,
+
+  init() {
+    this.container = document.getElementById("petugasListContainer");
+    this.addBtn = document.getElementById("addPetugasBtn");
+
+    if (this.addBtn) {
+      this.addBtn.addEventListener("click", () => {
+        this.addRow("");
+        const inputs = this.container.querySelectorAll(".event-petugas-input");
+        if (inputs.length > 0) {
+          inputs[inputs.length - 1].focus();
+        }
+      });
+    }
+
+    if (this.container) {
+      this.container.addEventListener("click", (e) => {
+        const removeBtn = e.target.closest(".btn-remove-petugas");
+        if (!removeBtn) return;
+
+        const row = removeBtn.closest(".petugas-row");
+        const allRows = this.container.querySelectorAll(".petugas-row");
+
+        if (allRows.length <= 1) {
+          // Hanya tersisa 1 baris: bersihkan nilai teks (pertahankan minimal 1 baris)
+          const input = row.querySelector(".event-petugas-input");
+          if (input) {
+            input.value = "";
+            input.focus();
+          }
+        } else {
+          // Hapus baris petugas
+          row.remove();
+          this.refreshPlaceholders();
+        }
+      });
+    }
+  },
+
+  createRow(value = "", isFirst = false) {
+    const row = document.createElement("div");
+    row.className = "petugas-row";
+
+    const placeholder = isFirst
+      ? "Nama petugas, atau tulis 'Bersama' untuk proker kolektif"
+      : "Nama petugas tambahan / penanggung jawab...";
+
+    row.innerHTML = `
+      <div class="input-icon-wrap">
+        <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <input type="text" class="form-control with-icon event-petugas-input"
+          placeholder="${placeholder}" maxlength="100" value="${escapeHtml(value)}">
+      </div>
+      <button type="button" class="btn-remove-petugas" title="Hapus / bersihkan baris petugas" aria-label="Hapus petugas">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    `;
+
+    return row;
+  },
+
+  addRow(value = "") {
+    if (!this.container) return;
+    const isFirst = this.container.children.length === 0;
+    const row = this.createRow(value, isFirst);
+    this.container.appendChild(row);
+    this.refreshPlaceholders();
+  },
+
+  setValues(petugasStr = "") {
+    if (!this.container) return;
+    this.container.innerHTML = "";
+
+    if (!petugasStr || !petugasStr.trim()) {
+      this.addRow("");
+      return;
+    }
+
+    const items = petugasStr
+      .split(",")
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    if (items.length === 0) {
+      this.addRow("");
+    } else {
+      items.forEach((val, idx) => {
+        const row = this.createRow(val, idx === 0);
+        this.container.appendChild(row);
+      });
+    }
+    this.refreshPlaceholders();
+  },
+
+  getValue() {
+    if (!this.container) return "";
+    const inputs = this.container.querySelectorAll(".event-petugas-input");
+    const values = [];
+    inputs.forEach(inp => {
+      const val = inp.value.trim();
+      if (val) {
+        values.push(val);
+      }
+    });
+    return values.join(", ");
+  },
+
+  reset() {
+    this.setValues("");
+  },
+
+  refreshPlaceholders() {
+    if (!this.container) return;
+    const rows = this.container.querySelectorAll(".petugas-row");
+    rows.forEach((r, idx) => {
+      const inp = r.querySelector(".event-petugas-input");
+      if (inp) {
+        inp.placeholder = idx === 0
+          ? "Nama petugas, atau tulis 'Bersama' untuk proker kolektif"
+          : "Nama petugas tambahan / penanggung jawab...";
+      }
+      const btn = r.querySelector(".btn-remove-petugas");
+      if (btn) {
+        btn.title = rows.length === 1 ? "Bersihkan teks petugas" : "Hapus baris petugas";
+      }
+    });
+  }
+};
+
+// ==========================================================================
+// PROKER AUTOCOMPLETE / DATALIST MANAGER
+// ==========================================================================
+const ProkerSuggestionsManager = {
+  updateDatalist() {
+    const datalist = document.getElementById("eventProkerList");
+    if (!datalist || !Array.isArray(AppState.events)) return;
+
+    const uniqueProkers = new Set();
+    AppState.events.forEach(ev => {
+      if (ev.proker && ev.proker.trim()) {
+        uniqueProkers.add(ev.proker.trim());
+      }
+    });
+
+    datalist.innerHTML = Array.from(uniqueProkers)
+      .sort((a, b) => a.localeCompare(b))
+      .map(p => `<option value="${escapeHtml(p)}"></option>`)
+      .join("");
+  }
+};
+
+// ==========================================================================
 // FLATPICKR CONTROLLER (PICKER TANGGAL & JAM)
 // ==========================================================================
 const FormPickers = {
@@ -1910,10 +2063,7 @@ const Modal = {
     StatusDropdown.setValue("confirmed");
     DivisiDropdown.reset();
 
-    const prokerInput = document.getElementById("eventProker");
-    if (prokerInput) prokerInput.value = "";
-    const petugasInput = document.getElementById("eventPetugas");
-    if (petugasInput) petugasInput.value = "";
+    PetugasInputManager.reset();
 
     // Isi otomatis tanggal mulai & selesai dengan tanggal yang sedang dipilih
     const targetDate = defaultDate || AppState.selectedDate || DateHelper.toDateString(new Date());
@@ -1958,14 +2108,11 @@ const Modal = {
     document.getElementById("eventDeskripsi").value = event.deskripsi || "";
     document.getElementById("eventLokasi").value = event.lokasi || "";
 
-    // Set nilai custom dropdown & input divisi/proker/petugas
+    // Set nilai custom dropdown & input divisi/petugas
     StatusDropdown.setValue(event.status || "confirmed");
     DivisiDropdown.setValue(event.divisi || "");
 
-    const prokerInput = document.getElementById("eventProker");
-    if (prokerInput) prokerInput.value = event.proker || "";
-    const petugasInput = document.getElementById("eventPetugas");
-    if (petugasInput) petugasInput.value = event.petugas || "";
+    PetugasInputManager.setValues(event.petugas || "");
 
     // Set tanggal & jam via Flatpickr
     FormPickers.setDateMulai(event.tanggal_mulai || "");
@@ -2048,6 +2195,7 @@ async function loadEventsData(isSilent = false) {
     UI.renderCalendar();
     UI.renderSelectedDateAgenda();
     UI.renderUpcomingEvents();
+    ProkerSuggestionsManager.updateDatalist();
 
     if (typeof EventDetailModal !== "undefined" && EventDetailModal.isOpen) {
       EventDetailModal.sync();
@@ -2081,7 +2229,7 @@ async function loadEventsData(isSilent = false) {
  */
 function validateEventForm(formData) {
   if (!formData.judul || formData.judul.trim() === "") {
-    return "Judul kegiatan wajib diisi.";
+    return "Nama program kerja / kegiatan wajib diisi.";
   }
 
   if (!formData.lokasi || formData.lokasi.trim() === "") {
@@ -2127,21 +2275,24 @@ async function handleFormSubmit(e) {
 
   const id = document.getElementById("eventId").value;
   const statusEl = document.getElementById("eventStatus");
-  const prokerEl = document.getElementById("eventProker");
-  const petugasEl = document.getElementById("eventPetugas");
+  const namaProkerKegiatan = document.getElementById("eventJudul").value.trim();
 
   const selectedDivisi = (typeof DivisiDropdown !== "undefined" && typeof DivisiDropdown.getValue === "function")
     ? DivisiDropdown.getValue()
     : (document.getElementById("eventDivisi") ? document.getElementById("eventDivisi").value.trim() : "");
 
+  const petugasValue = (typeof PetugasInputManager !== "undefined" && typeof PetugasInputManager.getValue === "function")
+    ? PetugasInputManager.getValue()
+    : (document.getElementById("eventPetugas") ? document.getElementById("eventPetugas").value.trim() : "");
+
   const formData = {
     id: id || undefined,
-    judul: document.getElementById("eventJudul").value.trim(),
+    judul: namaProkerKegiatan,
     deskripsi: document.getElementById("eventDeskripsi").value.trim(),
     lokasi: document.getElementById("eventLokasi").value.trim(),
     divisi: selectedDivisi,
-    proker: prokerEl ? prokerEl.value.trim() : "",
-    petugas: petugasEl ? petugasEl.value.trim() : "",
+    proker: namaProkerKegiatan,
+    petugas: petugasValue,
     status: statusEl ? statusEl.value : "confirmed",
     tanggal_mulai: document.getElementById("eventTanggalMulai").value,
     tanggal_selesai: document.getElementById("eventTanggalSelesai").value,
@@ -2425,8 +2576,7 @@ const EventDetailModal = {
     const lokasiEl = document.getElementById("detailLokasi");
     const divisiEl = document.getElementById("detailDivisi");
     const divisiIconEl = document.getElementById("detailDivisiIcon");
-    const prokerItemEl = document.getElementById("detailProkerItem");
-    const prokerEl = document.getElementById("detailProker");
+
     const petugasItemEl = document.getElementById("detailPetugasItem");
     const petugasEl = document.getElementById("detailPetugas");
     const adminActionsEl = document.getElementById("detailAdminActions");
@@ -2507,15 +2657,7 @@ const EventDetailModal = {
       divisiIconEl.className = divInfo.icon || "fa-solid fa-layer-group";
     }
 
-    // Proker Row
-    if (prokerItemEl && prokerEl) {
-      if (event.proker && event.proker.trim()) {
-        prokerEl.textContent = event.proker;
-        prokerItemEl.classList.remove("hidden");
-      } else {
-        prokerItemEl.classList.add("hidden");
-      }
-    }
+
 
     // Petugas Row
     if (petugasItemEl && petugasEl) {
@@ -3552,16 +3694,7 @@ const ArchiveModal = {
               </svg>
               <span>${escapeHtml(item.lokasi)}</span>
             </div>` : ""}
-            ${item.proker ? `
-            <div class="meta-item" title="Program Kerja">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="16" y1="13" x2="8" y2="13"></line>
-                <line x1="16" y1="17" x2="8" y2="17"></line>
-              </svg>
-              <span>Proker: ${escapeHtml(item.proker)}</span>
-            </div>` : ""}
+
             ${item.petugas ? `
             <div class="meta-item" title="Petugas / Penanggung Jawab">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -3981,6 +4114,8 @@ document.addEventListener("DOMContentLoaded", () => {
   ThemeManager.init();
   StatusDropdown.init();
   DivisiDropdown.init();
+  PetugasInputManager.init();
+  ProkerSuggestionsManager.updateDatalist();
   NotificationManager.init();
   EmailSubscribeModal.init();
   ArchiveModal.init();
