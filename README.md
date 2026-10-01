@@ -37,10 +37,25 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
   - Penanda tanggal hari ini dan penyorotan tanggal aktif yang dipilih.
   - Kompatibel penuh untuk desktop, tablet, dan smartphone (termasuk tombol FAB pada perangkat seluler).
 
-- **📋 Agenda Kegiatan & Detail Lengkap**:
+- **📋 Agenda Kegiatan & Tampilan Bersih**:
   - Panel agenda khusus menampilkan seluruh kegiatan pada tanggal terpilih secara terperinci.
-  - Menampilkan Judul, Deskripsi, Divisi Penanggung Jawab, Program Kerja (Proker), Petugas Pelaksana, Rentang Tanggal, Waktu Pelaksanaan (WITA), dan Lokasi Kegiatan.
+  - Menampilkan Nama Program Kerja / Kegiatan, Divisi Penanggung Jawab, Petugas Pelaksana, Rentang Tanggal, Waktu Pelaksanaan (WITA), dan Lokasi Kegiatan tanpa redundansi teks.
   - Status kegiatan: **Terkonfirmasi (*Confirmed*)** dan **Rencana (*Tentative*)** dengan pembeda visual (garis putus-putus dan badge warna).
+
+- **🔍 Modal Rincian Detail Kegiatan (*Event Detail Modal*)**:
+  - Mengklik kartu kegiatan (`.event-card`) pada panel agenda langsung membuka modal popup interaktif terperinci (`#eventDetailModal`).
+  - Menampilkan nama program kerja lengkap, badge divisi dengan kode warna tematik, status kegiatan, rentang hari & tanggal, jam pelaksanaan WITA, lokasi, deskripsi/agenda lengkap, dan daftar petugas pelaksana.
+  - Menyediakan tombol aksi cepat (*Edit* dan *Hapus*) yang otomatis muncul ketika administrator sedang dalam sesi login aktif.
+
+- **📝 Formulir Tambah/Edit Terpadu (*Merged Proker Field*)**:
+  - Menggabungkan *Judul Kegiatan* dan *Program Kerja* menjadi satu kolom input intuitif berlabel **"Nama Program Kerja / Kegiatan"** pada modal form (`#eventForm`).
+  - Secara otomatis mengisi dan menyinkronkan nilai ke kedua properti database (`judul` dan `proker`) saat form dikirimkan, menjaga kompatibilitas penuh dengan struktur spreadsheet backend.
+  - Saat mengedit data lama yang memiliki nilai judul dan proker berbeda, form menggunakan nilai `judul` sebagai sumber kebenaran (*source of truth*) tanpa mengubah data di database sampai pengguna menyimpan form kembali.
+
+- **👥 Multi-Petugas / Penanggung Jawab Dinamis**:
+  - Input petugas yang fleksibel dengan fitur tambah/hapus baris nama dinamis (*dynamic multi-entry inputs*).
+  - Nama-nama petugas digabungkan otomatis menjadi daftar terpisah koma (*comma-separated*) saat disimpan ke spreadsheet, dan diurai kembali menjadi baris-baris input individual saat form edit dibuka.
+  - Tetap mendukung penulisan label *"Bersama"* untuk program kerja kolektif yang dijalankan oleh seluruh anggota divisi/pengurus.
 
 - **⏳ Widget Kegiatan Mendatang (*Upcoming Events*)**:
   - Menampilkan ringkasan agenda terdekat yang diurutkan secara kronologis.
@@ -62,7 +77,7 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
   - Preferensi tema tersimpan otomatis di `localStorage` peramban.
 
 - **🔐 Keamanan & Otentikasi Administrator Berbasis PIN**:
-  - Akses publik bersifat *Read-Only* (pengunjung umum hanya dapat melihat kalender dan mendaftar notifikasi email).
+  - Akses publik bersifat *Read-Only* (pengunjung umum hanya dapat melihat kalender, membuka detail kegiatan, dan mendaftar notifikasi email).
   - Operasi manipulasi data (Tambah, Edit, Hapus Kegiatan, serta Evaluasi Arsip) diproteksi oleh **PIN Admin**.
   - PIN disimpan secara aman di **Script Properties** Google Apps Script (tidak terekspos di frontend maupun Google Sheets).
   - Otentikasi menghasilkan token sesi sementara yang ditandatangani dengan algoritma **HMAC-SHA256** dan memiliki masa berlaku 1 jam (3600 detik).
@@ -71,7 +86,7 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
 - **📧 Notifikasi Agenda Harian via Email (*Daily Email Digest*)**:
   - Fitur langganan email mandiri bagi siswa, guru, dan pengurus tanpa perlu login.
   - Modal pendaftaran dengan validasi alamat email, pengecekan status langganan aktif, dan opsi berhenti berlangganan (*unsubscribe* / soft delete).
-  - Pengiriman email otomatis terjadwal setiap pagi berisi ringkasan agenda kegiatan yang berlangsung pada hari tersebut dengan template HTML responsif.
+  - Pengiriman email otomatis terjadwal setiap pagi berisi ringkasan agenda kegiatan yang berlangsung pada hari tersebut dengan template HTML responsif yang bersih dan bebas duplikasi informasi.
 
 - **📦 Riwayat & Evaluasi Pelaksanaan Kegiatan (*Auto-Archive & Evaluation*)**:
   - Kegiatan yang telah selesai lebih dari 24 jam otomatis dipindahkan dari tab `Kegiatan` ke tab `Arsip` oleh pemicu latar belakang.
@@ -87,7 +102,7 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
 ## 📂 Struktur File Proyek
 
 ```text
-Calender-OSIS-IQIS/
+jadwal-proker-OSIS-IQIS/
 ├── Code.gs          # Backend: Google Apps Script (CRUD, Otentikasi PIN, Email Digest, Auto-Archive)
 ├── index.html       # Frontend: Struktur antarmuka web semantik dan modal dialog
 ├── style.css        # Styling: Sistem desain modern, tema Emerald Green, Dark/Light mode, responsif
@@ -105,6 +120,7 @@ Sistem membedakan hak akses pengguna secara tegas demi keamanan data:
 | Fitur / Aksi | Akses Publik (Tamu / Siswa) | Akses Administrator | Kebutuhan Otorisasi |
 | :--- | :---: | :---: | :--- |
 | **Melihat Kalender & Agenda** | ✅ Ya | ✅ Ya | Terbuka untuk umum |
+| **Membuka Rincian Detail Kegiatan** | ✅ Ya | ✅ Ya | Terbuka untuk umum |
 | **Melihat Kegiatan Mendatang** | ✅ Ya | ✅ Ya | Terbuka untuk umum |
 | **Berlangganan / Berhenti Email** | ✅ Ya | ✅ Ya | Terbuka untuk umum |
 | **Tambah Kegiatan Baru** | ❌ Tidak | ✅ Ya | Wajib Token Sesi Admin Valid |
@@ -124,7 +140,7 @@ Ikuti langkah-langkah berikut secara berurutan untuk menyiapkan backend di akun 
 2. Beri nama spreadsheet Anda, misalnya `Database Jadwal Proker OSIS`.
 3. Perhatikan URL Google Sheet Anda pada bilah alamat browser:
    ```text
-   https://docs.google.com/spreadsheets/d/1A_zE0Of-6Y3Nilj03_Ja7luiThDGcRDMH8Zy5_b_hQU/edit
+   https://docs.google.com/spreadsheets/d/1AbCdEfGhIjKlMnOpQrStUvWxYz1234567890abcd/edit
    ```
 4. Salin string karakter yang terletak di antara `/d/` dan `/edit`. String tersebut adalah **SPREADSHEET_ID** unik milik Anda.
    > ⚠️ **PERINGATAN PENTING**: Salin ID dari Google Sheet Anda sendiri. **JANGAN** menggunakan ID contoh dari dokumentasi atau repositori orang lain, karena data Anda tidak akan tersimpan ke spreadsheet Anda.
@@ -139,7 +155,7 @@ Ikuti langkah-langkah berikut secara berurutan untuk menyiapkan backend di akun 
    var SPREADSHEET_ID = "MASUKKAN_SPREADSHEET_ID_ANDA_DI_SINI";
 
    // Masukkan domain website hosting produksi Anda (misal domain Vercel Anda):
-   var SITE_URL = "https://kalender-osis.vercel.app";
+   var SITE_URL = "https://nama-proyek-anda.vercel.app";
    ```
    > 💡 **Catatan SITE_URL**: Gunakan domain produksi utama Anda (bukan preview URL commit sementara), karena URL ini akan disematkan sebagai tautan di footer email notifikasi harian.
 
@@ -232,8 +248,10 @@ Aplikasi membutuhkan **2 pemicu waktu (Time-driven Triggers)** agar fitur email 
 2. Pada baris ke-16, temukan variabel `APPS_SCRIPT_URL`:
    ```javascript
    // Ganti dengan Web App URL yang Anda salin pada Langkah 6:
-   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFOPlodNxu0JSQkpDGnZ4wd89ryTAWjA8geQvBOGduYeLJUjc4va9e7iXDfNoaWAam/exec";
+   const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxAbCdEfGhIjKlMnOpQrStUvWxYz1234567890_contoh/exec";
    ```
+   > ⚠️ **PERINGATAN PENTING**: Nilai URL di atas hanyalah contoh placeholder format URL Web App Google. Pastikan Anda menempelkan URL hasil deployment Web App milik Anda sendiri dari Langkah 6.
+
 3. Simpan file `script.js`. Frontend kini telah terhubung secara langsung dan aman ke Google Sheets Anda!
 
 ---
@@ -296,12 +314,12 @@ Menyimpan seluruh agenda kegiatan yang sedang berlangsung atau yang akan datang.
 | No | Nama Kolom (`HEADERS`) | Tipe Data | Keterangan & Aturan Validasi | Contoh Nilai |
 | :---: | :--- | :--- | :--- | :--- |
 | 1 | `id` | String | ID unik kegiatan (dibuat otomatis oleh backend) | `evt_1726588800123_456` |
-| 2 | `judul` | String | Nama/judul agenda kegiatan (Wajib) | `Latihan Dasar Kepemimpinan (LDKS)` |
+| 2 | `judul` | String | Nama program kerja / kegiatan (Wajib, diisi melalui input tunggal form UI dan disinkronkan ke kolom `proker`) | `Latihan Dasar Kepemimpinan (LDKS)` |
 | 3 | `deskripsi` | String | Catatan atau rincian agenda kegiatan | `Pelatihan kepemimpinan calon pengurus OSIS` |
 | 4 | `lokasi` | String | Tempat pelaksanaan kegiatan | `Aula Graha Bhakti` |
 | 5 | `divisi` | String | Divisi penanggung jawab (Wajib) | `Kepemimpinan dan Kebahasaan` |
-| 6 | `proker` | String | Nama program kerja OSIS terkait | `LDKS & English Club` |
-| 7 | `petugas` | String | Nama panitia / petugas pelaksana | `Siti Rahma & BPH OSIS` |
+| 6 | `proker` | String | Nama program kerja (Diisi otomatis sama dengan `judul` oleh form UI untuk menjaga kompatibilitas data backend) | `Latihan Dasar Kepemimpinan (LDKS)` |
+| 7 | `petugas` | String | Nama panitia / petugas pelaksana (Mendukung banyak nama dipisahkan koma, atau 'Bersama' untuk proker kolektif) | `Ahmad Fauzi, Siti Rahma, BPH OSIS` |
 | 8 | `tanggal_mulai` | String | Tanggal mulai dengan format `YYYY-MM-DD` (Wajib) | `2026-09-20` |
 | 9 | `tanggal_selesai` | String | Tanggal selesai format `YYYY-MM-DD` (Wajib) | `2026-09-21` |
 | 10 | `jam_mulai` | String | Waktu mulai format `HH:MM` (WITA) | `08:30` |
