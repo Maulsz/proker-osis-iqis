@@ -5,8 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jadwal Proker OSIS</title>
-  <meta name="description"
-    content="Aplikasi Jadwal Proker OSIS dengan fitur CRUD lengkap terhubung ke Google Sheets.">
+  <meta name="description" content="Aplikasi Jadwal Proker OSIS dengan fitur CRUD lengkap terhubung ke Google Sheets.">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -187,6 +186,43 @@
 
   <!-- Main Content Layout -->
   <main class="app-main container">
+    <!-- Unit Satuan Filter Toolbar (Semua / Ikhwan / Akhwat) -->
+    <div class="unit-filter-toolbar">
+      <div class="unit-filter-label">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <span>Filter Unit:</span>
+      </div>
+      <div class="unit-filter-group" id="unitFilterGroup" role="tablist" aria-label="Filter Unit Satuan">
+        <button type="button" class="unit-filter-btn active" data-unit="Semua" role="tab" aria-selected="true"
+          id="tabUnitSemua">
+          <span class="unit-filter-icon"><i class="fa-solid fa-layer-group"></i></span>
+          <span class="unit-filter-text">Semua</span>
+          <span class="unit-filter-badge" id="badgeCountSemua">0</span>
+        </button>
+        <button type="button" class="unit-filter-btn unit-btn-ikhwan" data-unit="Ikhwan" role="tab"
+          aria-selected="false" id="tabUnitIkhwan">
+          <span class="unit-filter-icon"><i class="fa-solid fa-user"></i></span>
+          <span class="unit-filter-text">Ikhwan</span>
+          <span class="unit-filter-badge" id="badgeCountIkhwan">0</span>
+        </button>
+        <button type="button" class="unit-filter-btn unit-btn-akhwat" data-unit="Akhwat" role="tab"
+          aria-selected="false" id="tabUnitAkhwat">
+          <span class="unit-filter-icon"><i class="fa-solid fa-user"></i></span>
+          <span class="unit-filter-text">Akhwat</span>
+          <span class="unit-filter-badge" id="badgeCountAkhwat">0</span>
+        </button>
+        <button type="button" class="unit-filter-btn unit-btn-bersama" data-unit="Bersama" role="tab"
+          aria-selected="false" id="tabUnitBersama">
+          <span class="unit-filter-icon"><i class="fa-solid fa-people-group"></i></span>
+          <span class="unit-filter-text">Bersama</span>
+          <span class="unit-filter-badge" id="badgeCountBersama">0</span>
+        </button>
+      </div>
+    </div>
+
     <div class="dashboard-grid">
 
       <!-- Kolom Kiri: Kalender Bulan & Kegiatan Mendatang -->
@@ -382,18 +418,18 @@
         <div class="modal-body">
           <!-- Pesan Error Login Admin -->
           <div id="adminLoginAlert" class="alert alert-danger hidden">
-            <span id="adminLoginAlertText">PIN Admin salah.</span>
+            <span id="adminLoginAlertText">Password Admin salah.</span>
           </div>
 
           <div class="form-group">
             <label for="adminPinInput" class="form-label">
-              Masukkan PIN Admin <span class="required">*</span>
+              Masukkan Password Admin <span class="required">*</span>
             </label>
             <div class="pin-input-wrap">
-              <input type="password" id="adminPinInput" class="form-control pin-input" placeholder="••••••"
-                maxlength="8" pattern="[0-9]*" inputmode="numeric" autocomplete="current-password" required>
-              <button type="button" id="togglePinVisibilityBtn" class="pin-toggle-btn" title="Lihat/Sembunyikan PIN"
-                aria-label="Lihat PIN">
+              <input type="password" id="adminPinInput" class="form-control pin-input"
+                placeholder="Masukkan password admin" maxlength="64" autocomplete="current-password" required>
+              <button type="button" id="togglePinVisibilityBtn" class="pin-toggle-btn"
+                title="Lihat/Sembunyikan Password" aria-label="Lihat Password">
                 <svg class="pin-icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -409,7 +445,7 @@
               </button>
             </div>
             <p class="text-muted text-sm" style="margin-top: 0.5rem; font-size: 0.8125rem;">
-              Masukkan 6–8 digit PIN administrator untuk mengaktifkan fitur tambah, edit, dan hapus kegiatan.
+              Masukkan password administrator untuk mengaktifkan fitur tambah, edit, dan hapus kegiatan.
             </p>
           </div>
         </div>
@@ -454,7 +490,8 @@
               Nama Program Kerja / Kegiatan <span class="required">*</span>
             </label>
             <input type="text" id="eventJudul" class="form-control"
-              placeholder="Contoh: Piket Adzan Dzuhur, Rapat Koordinasi Uji Kompetensi RPL, dst" required maxlength="120">
+              placeholder="Contoh: Piket Adzan Dzuhur, Rapat Koordinasi Uji Kompetensi RPL, dst" required
+              maxlength="120">
           </div>
 
           <!-- Field Deskripsi -->
@@ -466,19 +503,119 @@
               placeholder="Tuliskan keterangan detail, agenda pembahasan, atau perlengkapan yang perlu dibawa..."></textarea>
           </div>
 
-          <!-- Field Lokasi -->
+          <!-- Field Lokasi Kegiatan (Custom Dropdown) -->
           <div class="form-group">
-            <label for="eventLokasi" class="form-label">
+            <label id="eventLokasiLabel" class="form-label">
               Lokasi Kegiatan <span class="required">*</span>
             </label>
-            <div class="input-icon-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                <circle cx="12" cy="10" r="3"></circle>
-              </svg>
-              <input type="text" id="eventLokasi" class="form-control with-icon"
-                placeholder="Contoh: Lab RPL 2 / Aula Graha Bhakti" required maxlength="100">
+            <input type="hidden" id="eventLokasi" name="lokasi" value="">
+            <div class="custom-select-wrap" id="customLokasiDropdown">
+              <button type="button" class="custom-select-trigger form-control" id="customLokasiTrigger"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="eventLokasiLabel">
+                <span class="custom-select-value">
+                  <span class="lokasi-placeholder" style="color: var(--text-muted);">Pilih Lokasi Kegiatan</span>
+                </span>
+                <svg class="custom-select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul class="custom-select-options custom-lokasi-options hidden" id="customLokasiOptions" role="listbox"
+                tabindex="-1">
+                <li class="custom-select-option" role="option" data-value="Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)"
+                  aria-selected="false" tabindex="0">
+                  <span class="lokasi-option-icon icon-lokasi-sekolah"><i class="fa-solid fa-school"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Masjid Pendidikan IQIS" aria-selected="false"
+                  tabindex="0">
+                  <span class="lokasi-option-icon icon-lokasi-masjid"><i class="fa-solid fa-mosque"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Masjid Pendidikan IQIS</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Lainnya" aria-selected="false" tabindex="0">
+                  <span class="lokasi-option-icon icon-lokasi-lainnya"><i class="fa-solid fa-location-dot"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Lainnya</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+              </ul>
+            </div>
+            <!-- Input Tambahan jika Lokasi 'Lainnya' dipilih -->
+            <div id="lokasiLainnyaWrap" class="form-group hidden" style="margin-top: 0.625rem;">
+              <input type="text" id="eventLokasiLainnya" class="form-control" placeholder="Tulis lokasi lain..."
+                maxlength="100">
+            </div>
+          </div>
+
+          <!-- Field Unit Satuan (Custom Dropdown) -->
+          <div class="form-group">
+            <label id="eventUnitLabel" class="form-label">
+              Unit Satuan <span class="required">*</span>
+            </label>
+            <input type="hidden" id="eventUnit" name="unit" value="">
+            <div class="custom-select-wrap" id="customUnitDropdown">
+              <button type="button" class="custom-select-trigger form-control" id="customUnitTrigger"
+                aria-haspopup="listbox" aria-expanded="false" aria-labelledby="eventUnitLabel">
+                <span class="custom-select-value">
+                  <span class="unit-placeholder" style="color: var(--text-muted);">Pilih Unit Satuan</span>
+                </span>
+                <svg class="custom-select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </button>
+              <ul class="custom-select-options custom-unit-options hidden" id="customUnitOptions" role="listbox"
+                tabindex="-1">
+                <li class="custom-select-option" role="option" data-value="Ikhwan" aria-selected="false" tabindex="0">
+                  <span class="unit-option-icon icon-unit-ikhwan"><i class="fa-solid fa-user"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Ikhwan</span>
+                    <span class="option-desc">Kegiatan khusus santri / OSIS Ikhwan</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Akhwat" aria-selected="false" tabindex="0">
+                  <span class="unit-option-icon icon-unit-akhwat"><i class="fa-solid fa-user"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Akhwat</span>
+                    <span class="option-desc">Kegiatan khusus santriwati / OSIS Akhwat</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+                <li class="custom-select-option" role="option" data-value="Bersama" aria-selected="false" tabindex="0">
+                  <span class="unit-option-icon icon-unit-bersama"><i class="fa-solid fa-people-group"></i></span>
+                  <div class="option-text">
+                    <span class="option-title">Bersama (Ikhwan & Akhwat)</span>
+                    <span class="option-desc">Kegiatan gabungan seluruh santri / OSIS</span>
+                  </div>
+                  <svg class="option-check" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -557,8 +694,7 @@
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </li>
-                <li class="custom-select-option" role="option" data-value="Lainnya"
-                  aria-selected="false" tabindex="0">
+                <li class="custom-select-option" role="option" data-value="Lainnya" aria-selected="false" tabindex="0">
                   <span class="divisi-option-icon icon-divisi-lainnya"><i class="fa-solid fa-ellipsis"></i></span>
                   <div class="option-text">
                     <span class="option-title">Lainnya</span>
@@ -588,7 +724,8 @@
             </div>
             <div class="petugas-actions-wrap">
               <button type="button" id="addPetugasBtn" class="btn-add-petugas">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
@@ -809,7 +946,8 @@
             </div>
 
             <!-- Link Aksi Bawah Form -->
-            <div id="emailFormLinks" style="margin-top: 0.875rem; font-size: 0.8125rem; display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end;">
+            <div id="emailFormLinks"
+              style="margin-top: 0.875rem; font-size: 0.8125rem; display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end;">
               <button type="button" id="toggleCheckStatusModeBtn" class="btn-link"
                 style="background: none; border: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: 0.8125rem;">
                 Cek status pendaftaran email
@@ -832,7 +970,8 @@
               </div>
               <p class="subscribed-intro">Anda sudah terdaftar untuk menerima pengingat agenda harian dengan email:</p>
               <div class="subscribed-email-box">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round">
                   <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                   <polyline points="22 4 12 14.01 9 11.01"></polyline>
                 </svg>
@@ -840,7 +979,8 @@
               </div>
             </div>
 
-            <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; gap: 0.5rem; flex-wrap: wrap;">
+            <div
+              style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.8125rem; gap: 0.5rem; flex-wrap: wrap;">
               <button type="button" id="switchOtherEmailBtn" class="btn-link"
                 style="background: none; border: none; padding: 0; color: var(--primary); text-decoration: underline; cursor: pointer; font-size: 0.8125rem;">
                 Daftar email lain
@@ -865,7 +1005,8 @@
   </div>
 
   <!-- Modal Dialog: Riwayat & Arsip Kegiatan (Admin Completion Review) -->
-  <div id="archiveModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="archiveModalTitle">
+  <div id="archiveModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="archiveModalTitle">
     <div class="modal-dialog modal-archive">
       <div class="modal-header">
         <div style="display: flex; align-items: center; gap: 0.625rem;">
@@ -946,13 +1087,15 @@
   </div>
 
   <!-- Modal Dialog: Detail Kegiatan (Event Detail Modal) -->
-  <div id="eventDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+  <div id="eventDetailModal" class="modal-backdrop hidden" role="dialog" aria-modal="true"
+    aria-labelledby="detailModalTitle">
     <div class="modal-dialog modal-detail" id="eventDetailDialog">
       <div class="modal-header modal-detail-header" id="detailModalHeader">
         <div class="detail-header-content">
           <div class="detail-badge-row">
             <span id="detailStatusBadge"></span>
             <span id="detailDivisiBadge"></span>
+            <span id="detailUnitBadge"></span>
           </div>
           <h3 id="detailModalTitle" class="detail-title">-</h3>
         </div>
@@ -969,7 +1112,8 @@
         <!-- Deskripsi Section -->
         <div class="detail-section">
           <div class="detail-section-label">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
               <line x1="16" y1="13" x2="8" y2="13"></line>
               <line x1="16" y1="17" x2="8" y2="17"></line>
@@ -982,10 +1126,22 @@
 
         <!-- Meta Grid Section -->
         <div class="detail-grid">
+          <!-- Unit Satuan -->
+          <div class="detail-item" id="detailUnitItem">
+            <div class="detail-item-icon">
+              <i class="fa-solid fa-people-group" id="detailUnitIcon"></i>
+            </div>
+            <div class="detail-item-content">
+              <span class="detail-item-label">Unit Satuan</span>
+              <span id="detailUnit" class="detail-item-value">-</span>
+            </div>
+          </div>
+
           <!-- Tanggal Pelaksanaan -->
           <div class="detail-item" id="detailTanggalItem">
             <div class="detail-item-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -1001,7 +1157,8 @@
           <!-- Waktu Pelaksanaan -->
           <div class="detail-item" id="detailWaktuItem">
             <div class="detail-item-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
               </svg>
@@ -1015,7 +1172,8 @@
           <!-- Lokasi Kegiatan -->
           <div class="detail-item" id="detailLokasiItem">
             <div class="detail-item-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                 <circle cx="12" cy="10" r="3"></circle>
               </svg>
@@ -1041,7 +1199,8 @@
           <!-- Petugas / PIC -->
           <div class="detail-item" id="detailPetugasItem">
             <div class="detail-item-icon">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
@@ -1057,7 +1216,8 @@
       <div class="modal-footer detail-modal-footer">
         <div class="detail-admin-actions hidden" id="detailAdminActions">
           <button type="button" id="detailDeleteBtn" class="btn btn-danger-soft">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               <line x1="10" y1="11" x2="10" y2="17"></line>
@@ -1066,7 +1226,8 @@
             <span>Hapus</span>
           </button>
           <button type="button" id="detailEditBtn" class="btn btn-secondary">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
             </svg>

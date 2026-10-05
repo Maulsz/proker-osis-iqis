@@ -1,37 +1,39 @@
 /**
  * ============================================================================
- * JADWAL PROKER OSIS - BACKEND GOOGLE APPS SCRIPT DENGAN SISTEM PIN ADMIN
+ * JADWAL PROKER OSIS - BACKEND GOOGLE APPS SCRIPT DENGAN SISTEM PASSWORD ADMIN
  * ============================================================================
  * Proyek: Jadwal Proker OSIS (CRUD Web App)
  * Database: Google Sheets (Tab 'Kegiatan' & Tab 'Subscribers')
  * Backend: Google Apps Script Web App
- * Keamanan: Otentikasi & Otorisasi Berbasis PIN Admin (Script Properties & Token)
+ * Keamanan: Otentikasi & Otorisasi Berbasis Password Admin (Script Properties & Token)
  *
  * ============================================================================
- * PANDUAN PENTING: KONFIGURASI ADMIN PIN & CARA DEPLOYMENT
+ * PANDUAN PENTING: KONFIGURASI ADMIN PASSWORD & CARA DEPLOYMENT
  * ============================================================================
  * 
- * 1. DI MANA PIN ADMIN DIKONFIGURASI?
- *    PIN Admin TIDAK DISIMPAN di Google Sheets dan TIDAK DISIMPAN di frontend.
- *    PIN disimpan secara aman pada fitur bawaan Google Apps Script yaitu:
+ * 1. DI MANA PASSWORD ADMIN DIKONFIGURASI?
+ *    Password Admin TIDAK DISIMPAN di Google Sheets dan TIDAK DISIMPAN di frontend.
+ *    Password disimpan secara aman pada fitur bawaan Google Apps Script yaitu:
  *    "Script Properties" (Properti Skrip).
  *
- * 2. CARA MEMBUAT SCRIPT PROPERTY 'ADMIN_PIN':
+ * 2. CARA MEMBUAT SCRIPT PROPERTY 'ADMIN_PASSWORD_IKHWAN' & 'ADMIN_PASSWORD_AKHWAT':
  *    a. Buka editor Google Apps Script ini di peramban Anda.
  *    b. Di bilah sisi kiri (sidebar), klik ikon roda gigi ⚙️ "Project Settings"
  *       (Setelan Proyek).
  *    c. Gulir ke bawah hingga bagian "Script Properties" (Properti Skrip).
  *    d. Klik tombol "Add script property" (Tambahkan properti skrip).
  *    e. Masukkan:
- *       - Property : ADMIN_PIN
- *       - Value    : [PIN Rahasia Anda, misal: 123456 atau 8 digit angka]
+ *       - Property : ADMIN_PASSWORD_IKHWAN  (untuk admin Ikhwan)
+ *       - Value    : [Password Rahasia Anda]
+ *       - Property : ADMIN_PASSWORD_AKHWAT  (untuk admin Akhwat)
+ *       - Value    : [Password Rahasia Anda]
  *    f. Klik "Save script properties" (Simpan properti skrip).
  *
- * 3. CATATAN KEAMANAN MENGENAI PIN:
- *    - JANGAN PERNAH menuliskan PIN langsung di dalam baris kode ini.
- *    - JANGAN menaruh PIN di Google Sheets atau di file JavaScript frontend.
+ * 3. CATATAN KEAMANAN MENGENAI PASSWORD:
+ *    - JANGAN PERNAH menuliskan Password langsung di dalam baris kode ini.
+ *    - JANGAN menaruh Password di Google Sheets atau di file JavaScript frontend.
  *    - Frontend HANYA menerima token sesi sementara (kedaluwarsa dalam 1 jam).
- *    - Frontend TIDAK PERNAH menerima atau mengetahui nilai PIN asli yang tersimpan.
+ *    - Frontend TIDAK PERNAH menerima atau mengetahui nilai Password asli yang tersimpan.
  *
  * 4. APA YANG HARUS DILAKUKAN SETELAH MENGUBAH CODE.GS?
  *    Setiap kali ada perubahan pada Code.gs, Web App HARUS DIPERBARUI agar versi
@@ -113,13 +115,14 @@ var SITE_URL = "https://proker-osis-iqis.vercel.app";
 // Nama sheet/tab untuk menyimpan data kegiatan
 var SHEET_NAME = "Kegiatan";
 
-// Nama properti di Script Properties untuk menyimpan PIN Admin
-var ADMIN_PIN_PROPERTY_NAME = "ADMIN_PIN";
+// Nama properti di Script Properties untuk menyimpan Password Admin (Ikhwan & Akhwat)
+var ADMIN_PASSWORD_IKHWAN_PROPERTY_NAME = "ADMIN_PASSWORD_IKHWAN";
+var ADMIN_PASSWORD_AKHWAT_PROPERTY_NAME = "ADMIN_PASSWORD_AKHWAT";
 
 // Durasi masa aktif sesi token admin (1 jam = 3600 detik)
 var TOKEN_EXPIRATION_SECONDS = 3600;
 
-// Struktur kolom tabel kegiatan (Jadwal Program Kerja OSIS - 12 Kolom)
+// Struktur kolom tabel kegiatan (Jadwal Program Kerja OSIS - 13 Kolom dengan Unit)
 var HEADERS = [
   "id",
   "judul",
@@ -132,14 +135,15 @@ var HEADERS = [
   "tanggal_selesai",
   "jam_mulai",
   "jam_selesai",
-  "status"
+  "status",
+  "unit"
 ];
 
 // Konfigurasi sheet tab langganan email (Subscribers)
 var SUBSCRIBERS_SHEET_NAME = "Subscribers";
 var SUBSCRIBER_HEADERS = ["email", "subscribed_at", "status", "unsubscribed_at"];
 
-// Konfigurasi sheet tab riwayat & arsip kegiatan (Arsip - 14 Kolom)
+// Konfigurasi sheet tab riwayat & arsip kegiatan (Arsip - 15 Kolom dengan Unit)
 var ARCHIVE_SHEET_NAME = "Arsip";
 var ARCHIVE_HEADERS = [
   "id",
@@ -155,25 +159,29 @@ var ARCHIVE_HEADERS = [
   "jam_selesai",
   "status",
   "status_pelaksanaan",
-  "keterangan_pelaksanaan"
+  "keterangan_pelaksanaan",
+  "unit"
 ];
 
 // ============================================================================
-// HELPER OTENTIKASI & SISTEM TOKEN ADMIN
+// HELPER OTENTIKASI & SISTEM TOKEN ADMIN PER-UNIT
 // ============================================================================
 
 /**
- * Mengambil PIN Admin dari Script Properties secara aman.
- * Jika belum disetel di Script Properties, mengembalikan null.
+ * Mengambil Password Admin Ikhwan & Akhwat dari Script Properties secara aman.
  */
-function getAdminPinFromProperties() {
+function getAdminPasswordsFromProperties() {
   try {
     var scriptProperties = PropertiesService.getScriptProperties();
-    var pin = scriptProperties.getProperty(ADMIN_PIN_PROPERTY_NAME);
-    return pin ? String(pin).trim() : null;
+    var passIkhwan = scriptProperties.getProperty(ADMIN_PASSWORD_IKHWAN_PROPERTY_NAME);
+    var passAkhwat = scriptProperties.getProperty(ADMIN_PASSWORD_AKHWAT_PROPERTY_NAME);
+    return {
+      ikhwan: passIkhwan ? String(passIkhwan).trim() : null,
+      akhwat: passAkhwat ? String(passAkhwat).trim() : null
+    };
   } catch (err) {
     console.error("Gagal membaca Script Properties:", err);
-    return null;
+    return { ikhwan: null, akhwat: null };
   }
 }
 
@@ -193,16 +201,18 @@ function getOrCreateSessionSecret() {
 
 /**
  * Membuat token sesi admin sementara yang ditandatangani HMAC-SHA256.
+ * Payload mencakup: randomId|expiresAt|unit
  * Token berlaku selama TOKEN_EXPIRATION_SECONDS (1 jam).
  * Status aktif token juga dicatat di CacheService agar bisa di-revoke saat logout.
  */
-function createAdminSessionToken() {
+function createAdminSessionToken(unitRole) {
   var secret = getOrCreateSessionSecret();
   var randomId = Utilities.getUuid();
   var expiresAt = new Date().getTime() + (TOKEN_EXPIRATION_SECONDS * 1000);
+  var role = (unitRole === "Akhwat") ? "Akhwat" : "Ikhwan";
 
-  // Payload: randomId|expiresAt
-  var payload = randomId + "|" + expiresAt;
+  // Payload: randomId|expiresAt|unit
+  var payload = randomId + "|" + expiresAt + "|" + role;
   var signatureBytes = Utilities.computeHmacSha256Signature(payload, secret);
   var signature = Utilities.base64Encode(signatureBytes);
 
@@ -219,22 +229,24 @@ function createAdminSessionToken() {
 
   return {
     token: token,
-    expiresAt: expiresAt
+    expiresAt: expiresAt,
+    unit: role
   };
 }
 
 /**
  * Memvalidasi apakah token sesi admin valid, tanda tangan HMAC cocok,
  * belum kedaluwarsa, dan belum di-logout.
+ * Mengembalikan objek: { valid: boolean, unit: string|null, randomId: string|null }
  */
 function isValidAdminToken(token) {
   if (!token || typeof token !== "string" || token.indexOf(".") === -1) {
-    return false;
+    return { valid: false, unit: null, randomId: null };
   }
 
   try {
     var parts = token.split(".");
-    if (parts.length !== 2) return false;
+    if (parts.length !== 2) return { valid: false, unit: null, randomId: null };
 
     var encodedPayload = parts[0];
     var providedSignature = parts[1];
@@ -244,35 +256,48 @@ function isValidAdminToken(token) {
     var payload = payloadBlob.getDataAsString();
 
     var payloadParts = payload.split("|");
-    if (payloadParts.length !== 2) return false;
+    // Format baru: randomId|expiresAt|unit (3 bagian)
+    // Format lama: randomId|expiresAt (2 bagian) -> fallback ke Bersama/Ikhwan
+    if (payloadParts.length < 2) return { valid: false, unit: null, randomId: null };
 
     var randomId = payloadParts[0];
     var expiresAt = parseInt(payloadParts[1], 10);
+    var unit = (payloadParts.length >= 3 && payloadParts[2]) ? payloadParts[2] : "Ikhwan";
 
     // 1. Cek masa berlaku token (waktu sekarang vs waktu kedaluwarsa)
     if (isNaN(expiresAt) || new Date().getTime() > expiresAt) {
-      return false;
+      return { valid: false, unit: null, randomId: null };
     }
 
     // 2. Verifikasi tanda tangan HMAC-SHA256
     var expectedSignatureBytes = Utilities.computeHmacSha256Signature(payload, secret);
     var expectedSignature = Utilities.base64Encode(expectedSignatureBytes);
     if (expectedSignature !== providedSignature) {
-      return false;
+      return { valid: false, unit: null, randomId: null };
     }
 
     // 3. Cek apakah token telah di-logout di CacheService
     var cache = CacheService.getScriptCache();
     var cacheStatus = cache.get("admin_session_" + randomId);
     if (cacheStatus === "revoked") {
-      return false;
+      return { valid: false, unit: null, randomId: null };
     }
 
-    return true;
+    return { valid: true, unit: unit, randomId: randomId };
   } catch (err) {
     console.error("Kesalahan saat validasi token admin:", err);
-    return false;
+    return { valid: false, unit: null, randomId: null };
   }
+}
+
+/**
+ * Helper otorisasi: Memeriksa apakah admin dengan role tertentu berhak mengelola suatu unit kegiatan
+ */
+function isAuthorizedForUnit(adminRole, targetUnit) {
+  if (!adminRole) return false;
+  var target = String(targetUnit || "Bersama").trim();
+  if (target === "Bersama") return true;
+  return adminRole === target;
 }
 
 /**
@@ -300,8 +325,9 @@ function revokeAdminToken(token) {
 // ============================================================================
 
 /**
- * Memeriksa dan memigrasi struktur tab Kegiatan jika masih menggunakan skema 9 kolom lama.
+ * Memeriksa dan memigrasi struktur tab Kegiatan jika masih menggunakan skema lama.
  * Idempoten dan aman dieksekusi berulang kali (dilindungi ScriptLock).
+ * Memastikan kolom 'unit' (kolom ke-13) ada dan mem-backfill baris lama dengan 'Bersama'.
  */
 function migrateEventsSheetIfNeeded(sheet) {
   var lock = LockService.getScriptLock();
@@ -339,12 +365,19 @@ function migrateEventsSheetIfNeeded(sheet) {
     }
 
     if (needsMigration || needsRepair) {
-      console.log("Menjalankan migrasi/perbaikan data pada sheet 'Kegiatan' (needsMigration=" + needsMigration + ", needsRepair=" + needsRepair + ")...");
-      
-      // Sisipkan 3 kolom baru setelah kolom 4 (lokasi) agar data tanggal_mulai dst bergeser ke kanan
+      console.log("Menjalankan migrasi/perbaikan data divisi pada sheet 'Kegiatan'...");
       sheet.insertColumnsAfter(4, 3);
+    }
 
-      // Tulis ulang baris header lengkap 12 kolom
+    // Periksa kolom 'unit' (kolom ke-13)
+    var currentLastCol = sheet.getLastColumn();
+    var currentHeaders = sheet.getRange(1, 1, 1, Math.max(currentLastCol, HEADERS.length)).getValues()[0];
+    var col13Header = String(currentHeaders[12] || "").trim().toLowerCase();
+
+    if (currentLastCol < HEADERS.length || col13Header !== "unit" || needsMigration || needsRepair) {
+      console.log("Menjalankan migrasi kolom 'unit' pada sheet 'Kegiatan'...");
+      
+      // Tulis ulang baris header lengkap 13 kolom
       sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
       var headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
       headerRange.setFontWeight("bold");
@@ -358,15 +391,40 @@ function migrateEventsSheetIfNeeded(sheet) {
       sheet.setColumnWidth(2, 220); // judul
       sheet.setColumnWidth(3, 260); // deskripsi
       sheet.setColumnWidth(4, 180); // lokasi
-      sheet.setColumnWidth(5, 180); // divisi (~180px)
-      sheet.setColumnWidth(6, 200); // proker (~200px)
-      sheet.setColumnWidth(7, 150); // petugas (~150px)
+      sheet.setColumnWidth(5, 180); // divisi
+      sheet.setColumnWidth(6, 200); // proker
+      sheet.setColumnWidth(7, 150); // petugas
       sheet.setColumnWidth(8, 120); // tanggal_mulai
       sheet.setColumnWidth(9, 120); // tanggal_selesai
       sheet.setColumnWidth(10, 100); // jam_mulai
       sheet.setColumnWidth(11, 100); // jam_selesai
       sheet.setColumnWidth(12, 110); // status
-      
+      sheet.setColumnWidth(13, 120); // unit
+
+      // Backfill data baris lama jika ada: unit = 'Bersama' jika kosong
+      var updatedLastRow = sheet.getLastRow();
+      if (updatedLastRow > 1) {
+        var numDataRows = updatedLastRow - 1;
+        var existingUnitValues = sheet.getRange(2, 13, numDataRows, 1).getValues();
+        var backfillValues = [];
+        var modified = false;
+
+        for (var r = 0; r < numDataRows; r++) {
+          var val = String(existingUnitValues[r][0] || "").trim();
+          if (!val) {
+            backfillValues.push(["Bersama"]);
+            modified = true;
+          } else {
+            backfillValues.push([val]);
+          }
+        }
+
+        if (modified) {
+          sheet.getRange(2, 13, numDataRows, 1).setValues(backfillValues);
+          console.log("Backfill unit='Bersama' berhasil pada " + numDataRows + " baris kegiatan.");
+        }
+      }
+
       console.log("Migrasi sheet 'Kegiatan' selesai.");
     }
   } finally {
@@ -406,7 +464,7 @@ function getOrCreateSheet() {
   var lastCol = sheet.getLastColumn();
 
   if (lastRow === 0 || lastCol === 0) {
-    // Tulis header baru
+    // Tulis header baru 13 kolom
     sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
     
     // Format header
@@ -422,14 +480,15 @@ function getOrCreateSheet() {
     sheet.setColumnWidth(2, 220); // judul
     sheet.setColumnWidth(3, 260); // deskripsi
     sheet.setColumnWidth(4, 180); // lokasi
-    sheet.setColumnWidth(5, 180); // divisi (~180px)
-    sheet.setColumnWidth(6, 200); // proker (~200px)
-    sheet.setColumnWidth(7, 150); // petugas (~150px)
+    sheet.setColumnWidth(5, 180); // divisi
+    sheet.setColumnWidth(6, 200); // proker
+    sheet.setColumnWidth(7, 150); // petugas
     sheet.setColumnWidth(8, 120); // tanggal_mulai
     sheet.setColumnWidth(9, 120); // tanggal_selesai
     sheet.setColumnWidth(10, 100); // jam_mulai
     sheet.setColumnWidth(11, 100); // jam_selesai
     sheet.setColumnWidth(12, 110); // status
+    sheet.setColumnWidth(13, 120); // unit
   } else {
     // Sheet ada data: jalankan migrasi aman jika diperlukan
     migrateEventsSheetIfNeeded(sheet);
@@ -440,8 +499,6 @@ function getOrCreateSheet() {
 
 /**
  * Migrasi otomatis sheet 'Subscribers' jika masih menggunakan format lama (2 kolom).
- * Menyisipkan 2 kolom baru (status, unsubscribed_at), menulis ulang header,
- * dan mem-backfill seluruh baris yang ada dengan status "subscribed".
  */
 function migrateSubscribersSheetIfNeeded(sheet) {
   var lock = LockService.getScriptLock();
@@ -555,8 +612,89 @@ function getOrCreateSubscribersSheet() {
 }
 
 /**
+ * Migrasi otomatis sheet 'Arsip' jika kolom 'unit' (kolom ke-15) belum ada.
+ */
+function migrateArchiveSheetIfNeeded(sheet) {
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+  } catch (e) {
+    console.warn("Tidak dapat memperoleh lock untuk migrasi sheet Arsip:", e);
+    return;
+  }
+
+  try {
+    var lastRow = sheet.getLastRow();
+    var lastCol = sheet.getLastColumn();
+
+    if (lastRow === 0 || lastCol === 0) {
+      return;
+    }
+
+    var headerValues = sheet.getRange(1, 1, 1, Math.max(lastCol, ARCHIVE_HEADERS.length)).getValues()[0];
+    var col15Header = String(headerValues[14] || "").trim().toLowerCase();
+
+    if (lastCol < ARCHIVE_HEADERS.length || col15Header !== "unit") {
+      console.log("Menjalankan migrasi kolom 'unit' pada sheet 'Arsip'...");
+
+      sheet.getRange(1, 1, 1, ARCHIVE_HEADERS.length).setValues([ARCHIVE_HEADERS]);
+      var headerRange = sheet.getRange(1, 1, 1, ARCHIVE_HEADERS.length);
+      headerRange.setFontWeight("bold");
+      headerRange.setBackground("#10b981");
+      headerRange.setFontColor("#ffffff");
+      headerRange.setHorizontalAlignment("center");
+      sheet.setFrozenRows(1);
+
+      sheet.setColumnWidth(1, 140);  // id
+      sheet.setColumnWidth(2, 220);  // judul
+      sheet.setColumnWidth(3, 260);  // deskripsi
+      sheet.setColumnWidth(4, 180);  // lokasi
+      sheet.setColumnWidth(5, 180);  // divisi
+      sheet.setColumnWidth(6, 200);  // proker
+      sheet.setColumnWidth(7, 150);  // petugas
+      sheet.setColumnWidth(8, 120);  // tanggal_mulai
+      sheet.setColumnWidth(9, 120);  // tanggal_selesai
+      sheet.setColumnWidth(10, 100); // jam_mulai
+      sheet.setColumnWidth(11, 100); // jam_selesai
+      sheet.setColumnWidth(12, 110); // status
+      sheet.setColumnWidth(13, 160); // status_pelaksanaan
+      sheet.setColumnWidth(14, 280); // keterangan_pelaksanaan
+      sheet.setColumnWidth(15, 120); // unit
+
+      if (lastRow > 1) {
+        var numDataRows = lastRow - 1;
+        var existingUnitValues = sheet.getRange(2, 15, numDataRows, 1).getValues();
+        var backfillValues = [];
+        var modified = false;
+
+        for (var r = 0; r < numDataRows; r++) {
+          var val = String(existingUnitValues[r][0] || "").trim();
+          if (!val) {
+            backfillValues.push(["Bersama"]);
+            modified = true;
+          } else {
+            backfillValues.push([val]);
+          }
+        }
+
+        if (modified) {
+          sheet.getRange(2, 15, numDataRows, 1).setValues(backfillValues);
+          console.log("Backfill unit='Bersama' berhasil pada " + numDataRows + " baris arsip.");
+        }
+      }
+
+      console.log("Migrasi sheet 'Arsip' selesai.");
+    }
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (err) {}
+  }
+}
+
+/**
  * Fungsi pembantu untuk membuka atau membuat sheet tab 'Arsip'
- * untuk menyimpan riwayat kegiatan yang telah selesai lebih dari 24 jam.
+ * untuk menyimpan riwayat kegiatan yang telah selesai lebih dari 24 jam (15 Kolom).
  */
 function getOrCreateArchiveSheet() {
   var ss;
@@ -583,20 +721,23 @@ function getOrCreateArchiveSheet() {
     headerRange.setHorizontalAlignment("center");
     sheet.setFrozenRows(1);
 
-    sheet.setColumnWidth(1, 140); // id
-    sheet.setColumnWidth(2, 220); // judul
-    sheet.setColumnWidth(3, 260); // deskripsi
-    sheet.setColumnWidth(4, 180); // lokasi
-    sheet.setColumnWidth(5, 180); // divisi
-    sheet.setColumnWidth(6, 200); // proker
-    sheet.setColumnWidth(7, 150); // petugas
-    sheet.setColumnWidth(8, 120); // tanggal_mulai
-    sheet.setColumnWidth(9, 120); // tanggal_selesai
+    sheet.setColumnWidth(1, 140);  // id
+    sheet.setColumnWidth(2, 220);  // judul
+    sheet.setColumnWidth(3, 260);  // deskripsi
+    sheet.setColumnWidth(4, 180);  // lokasi
+    sheet.setColumnWidth(5, 180);  // divisi
+    sheet.setColumnWidth(6, 200);  // proker
+    sheet.setColumnWidth(7, 150);  // petugas
+    sheet.setColumnWidth(8, 120);  // tanggal_mulai
+    sheet.setColumnWidth(9, 120);  // tanggal_selesai
     sheet.setColumnWidth(10, 100); // jam_mulai
     sheet.setColumnWidth(11, 100); // jam_selesai
     sheet.setColumnWidth(12, 110); // status
     sheet.setColumnWidth(13, 160); // status_pelaksanaan
     sheet.setColumnWidth(14, 280); // keterangan_pelaksanaan
+    sheet.setColumnWidth(15, 120); // unit
+  } else {
+    migrateArchiveSheetIfNeeded(sheet);
   }
 
   return sheet;
@@ -613,9 +754,12 @@ function createJsonResponse(data) {
 
 /**
  * Helper untuk mengonversi baris sheet menjadi objek kegiatan
- * Membaca posisi 12 kolom tetap
+ * Membaca posisi 13 kolom tetap (termasuk unit)
  */
 function rowToObject(row) {
+  var unitVal = String(row[12] || "").trim();
+  if (!unitVal) unitVal = "Bersama";
+
   return {
     id: String(row[0] || ""),
     judul: String(row[1] || ""),
@@ -628,14 +772,18 @@ function rowToObject(row) {
     tanggal_selesai: String(row[8] || ""),
     jam_mulai: String(row[9] || ""),
     jam_selesai: String(row[10] || ""),
-    status: String(row[11] || "confirmed")
+    status: String(row[11] || "confirmed"),
+    unit: unitVal
   };
 }
 
 /**
- * Helper untuk mengonversi baris sheet Arsip menjadi objek riwayat kegiatan (14 Kolom)
+ * Helper untuk mengonversi baris sheet Arsip menjadi objek riwayat kegiatan (15 Kolom termasuk unit)
  */
 function rowToArchiveObject(row) {
+  var unitVal = String(row[14] || "").trim();
+  if (!unitVal) unitVal = "Bersama";
+
   return {
     id: String(row[0] || ""),
     judul: String(row[1] || ""),
@@ -650,7 +798,8 @@ function rowToArchiveObject(row) {
     jam_selesai: String(row[10] || ""),
     status: String(row[11] || "confirmed"),
     status_pelaksanaan: String(row[12] || "Belum Dinilai"),
-    keterangan_pelaksanaan: String(row[13] || "")
+    keterangan_pelaksanaan: String(row[13] || ""),
+    unit: unitVal
   };
 }
 
@@ -739,7 +888,8 @@ function archiveExpiredEvents() {
           row[10], // jam_selesai
           row[11], // status
           "Belum Dinilai", // status_pelaksanaan
-          ""       // keterangan_pelaksanaan
+          "",      // keterangan_pelaksanaan
+          String(row[12] || "Bersama").trim() || "Bersama" // unit
         ];
         rowsToArchive.push({
           rowIndex: i + 2,
@@ -824,11 +974,12 @@ function doGet(e) {
     // ------------------------------------------------------------------------
     if (e && e.parameter && e.parameter.action === "archive") {
       var clientToken = e.parameter.token || "";
-      if (!isValidAdminToken(clientToken)) {
+      var auth = isValidAdminToken(clientToken);
+      if (!auth.valid) {
         return createJsonResponse({
           success: false,
           unauthorized: true,
-          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan PIN Admin."
+          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan Password Admin."
         });
       }
 
@@ -938,44 +1089,52 @@ function doPost(e) {
     var clientToken = requestBody.token || data.token || "";
 
     // ------------------------------------------------------------------------
-    // AKSI 1: LOGIN ADMIN (Verifikasi PIN)
+    // AKSI 1: LOGIN ADMIN (Verifikasi Password Ikhwan vs Akhwat)
     // ------------------------------------------------------------------------
     if (action === "login") {
-      var submittedPin = String(requestBody.pin || data.pin || "").trim();
+      var submittedPassword = String(requestBody.password || data.password || requestBody.pin || data.pin || "").trim();
 
-      if (!submittedPin) {
+      if (!submittedPassword) {
         return createJsonResponse({
           success: false,
-          error: "PIN Admin tidak boleh kosong."
+          error: "Password Admin tidak boleh kosong."
         });
       }
 
-      var storedPin = getAdminPinFromProperties();
+      var passwords = getAdminPasswordsFromProperties();
 
-      // Peringatan jika pengembang belum membuat ADMIN_PIN di Script Properties
-      if (!storedPin) {
+      // Peringatan jika pengembang belum membuat Password di Script Properties
+      if (!passwords.ikhwan && !passwords.akhwat) {
         return createJsonResponse({
           success: false,
-          error: "Konfigurasi server belum lengkap: ADMIN_PIN belum disetel di Script Properties Google Apps Script. Buka Project Settings > Script Properties."
+          error: "Konfigurasi server belum lengkap: ADMIN_PASSWORD_IKHWAN atau ADMIN_PASSWORD_AKHWAT belum disetel di Script Properties Google Apps Script. Buka Project Settings > Script Properties."
         });
       }
 
-      // Validasi kesamaan PIN
-      if (submittedPin !== storedPin) {
+      var resolvedUnit = null;
+      if (passwords.ikhwan && submittedPassword === passwords.ikhwan) {
+        resolvedUnit = "Ikhwan";
+      } else if (passwords.akhwat && submittedPassword === passwords.akhwat) {
+        resolvedUnit = "Akhwat";
+      }
+
+      // Validasi kesamaan Password
+      if (!resolvedUnit) {
         return createJsonResponse({
           success: false,
-          error: "PIN Admin salah. Silakan periksa dan coba lagi."
+          error: "Password Admin salah. Silakan periksa dan coba lagi."
         });
       }
 
-      // PIN Benar: Buat token sesi sementara (1 jam)
-      var session = createAdminSessionToken();
+      // Password Benar: Buat token sesi sementara (1 jam) dengan unit role
+      var session = createAdminSessionToken(resolvedUnit);
 
       return createJsonResponse({
         success: true,
-        message: "Login admin berhasil.",
+        message: "Login admin " + resolvedUnit + " berhasil.",
         token: session.token,
-        expiresAt: session.expiresAt
+        expiresAt: session.expiresAt,
+        unit: resolvedUnit
       });
     }
 
@@ -983,11 +1142,12 @@ function doPost(e) {
     // AKSI 2: VERIFIKASI SESI TOKEN
     // ------------------------------------------------------------------------
     else if (action === "verifySession") {
-      var isValid = isValidAdminToken(clientToken);
+      var auth = isValidAdminToken(clientToken);
       return createJsonResponse({
         success: true,
-        valid: isValid,
-        message: isValid ? "Sesi admin aktif." : "Sesi admin telah kedaluwarsa atau tidak valid."
+        valid: auth.valid,
+        unit: auth.unit,
+        message: auth.valid ? ("Sesi admin " + (auth.unit || "") + " aktif.").trim() : "Sesi admin telah kedaluwarsa atau tidak valid."
       });
     }
 
@@ -1190,12 +1350,13 @@ function doPost(e) {
     // PROTEKSI OTORISASI: OPERASI CRUD (CREATE, UPDATE, DELETE)
     // ========================================================================
     // Seluruh operasi di bawah ini WAJIB memiliki token sesi admin yang valid!
+    var auth = isValidAdminToken(clientToken);
     if (action === "create" || action === "update" || action === "delete") {
-      if (!isValidAdminToken(clientToken)) {
+      if (!auth.valid) {
         return createJsonResponse({
           success: false,
           unauthorized: true,
-          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan PIN Admin."
+          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan Password Admin."
         });
       }
     }
@@ -1203,7 +1364,7 @@ function doPost(e) {
     var sheet = getOrCreateSheet();
 
     // ------------------------------------------------------------------------
-    // AKSI 6: CREATE (Tambah kegiatan baru - Hanya Admin)
+    // AKSI 7: CREATE (Tambah kegiatan baru - Hanya Admin Berwenang)
     // ------------------------------------------------------------------------
     if (action === "create") {
       if (!data.judul || !data.tanggal_mulai || !data.tanggal_selesai) {
@@ -1217,6 +1378,23 @@ function doPost(e) {
         return createJsonResponse({
           success: false,
           error: "Field 'divisi' (Divisi Penanggung Jawab) wajib diisi."
+        });
+      }
+
+      var submittedUnit = String(data.unit || "").trim();
+      var validUnits = ["Ikhwan", "Akhwat", "Bersama"];
+      if (!submittedUnit || validUnits.indexOf(submittedUnit) === -1) {
+        return createJsonResponse({
+          success: false,
+          error: "Field 'unit' (Unit Satuan) wajib diisi ('Ikhwan', 'Akhwat', atau 'Bersama')."
+        });
+      }
+
+      // Validasi hak akses unit admin
+      if (!isAuthorizedForUnit(auth.unit, submittedUnit)) {
+        return createJsonResponse({
+          success: false,
+          error: "Akses ditolak: Anda login sebagai admin " + auth.unit + " dan tidak dapat membuat kegiatan untuk unit " + submittedUnit + "."
         });
       }
 
@@ -1234,7 +1412,8 @@ function doPost(e) {
         data.tanggal_selesai || "",
         data.jam_mulai || "",
         data.jam_selesai || "",
-        data.status || "confirmed"
+        data.status || "confirmed",
+        submittedUnit
       ];
 
       sheet.appendRow(newRow);
@@ -1247,7 +1426,7 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // AKSI 7: UPDATE (Perbarui kegiatan yang ada - Hanya Admin)
+    // AKSI 8: UPDATE (Perbarui kegiatan yang ada - Hanya Admin Berwenang)
     // ------------------------------------------------------------------------
     else if (action === "update") {
       var updateId = data.id ? String(data.id).trim() : "";
@@ -1265,6 +1444,15 @@ function doPost(e) {
         });
       }
 
+      var submittedUpdateUnit = String(data.unit || "").trim();
+      var validUnitsList = ["Ikhwan", "Akhwat", "Bersama"];
+      if (!submittedUpdateUnit || validUnitsList.indexOf(submittedUpdateUnit) === -1) {
+        return createJsonResponse({
+          success: false,
+          error: "Field 'unit' (Unit Satuan) wajib diisi ('Ikhwan', 'Akhwat', atau 'Bersama')."
+        });
+      }
+
       var lastRow = sheet.getLastRow();
       if (lastRow <= 1) {
         return createJsonResponse({
@@ -1273,12 +1461,14 @@ function doPost(e) {
         });
       }
 
-      var idRangeValues = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+      var existingRows = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
       var foundRowIndex = -1;
+      var existingUnit = "Bersama";
 
-      for (var k = 0; k < idRangeValues.length; k++) {
-        if (idRangeValues[k][0] === updateId) {
+      for (var k = 0; k < existingRows.length; k++) {
+        if (existingRows[k][0] === updateId) {
           foundRowIndex = k + 2;
+          existingUnit = String(existingRows[k][12] || "Bersama").trim() || "Bersama";
           break;
         }
       }
@@ -1287,6 +1477,22 @@ function doPost(e) {
         return createJsonResponse({
           success: false,
           error: "Kegiatan dengan ID '" + updateId + "' tidak ditemukan."
+        });
+      }
+
+      // Validasi otorisasi: admin hanya boleh mengedit kegiatan unit miliknya / Bersama
+      if (!isAuthorizedForUnit(auth.unit, existingUnit)) {
+        return createJsonResponse({
+          success: false,
+          error: "Akses ditolak: Anda login sebagai admin " + auth.unit + " dan tidak dapat mengubah kegiatan unit " + existingUnit + "."
+        });
+      }
+
+      // Validasi otorisasi target unit baru
+      if (!isAuthorizedForUnit(auth.unit, submittedUpdateUnit)) {
+        return createJsonResponse({
+          success: false,
+          error: "Akses ditolak: Anda login sebagai admin " + auth.unit + " dan tidak dapat mengubah unit kegiatan menjadi " + submittedUpdateUnit + "."
         });
       }
 
@@ -1302,7 +1508,8 @@ function doPost(e) {
         data.tanggal_selesai || "",
         data.jam_mulai || "",
         data.jam_selesai || "",
-        data.status || "confirmed"
+        data.status || "confirmed",
+        submittedUpdateUnit
       ];
 
       sheet.getRange(foundRowIndex, 1, 1, HEADERS.length).setValues([updatedRow]);
@@ -1315,7 +1522,7 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // AKSI 8: DELETE (Hapus kegiatan - Hanya Admin)
+    // AKSI 9: DELETE (Hapus kegiatan - Hanya Admin Berwenang)
     // ------------------------------------------------------------------------
     else if (action === "delete") {
       var deleteId = data.id ? String(data.id).trim() : "";
@@ -1334,12 +1541,14 @@ function doPost(e) {
         });
       }
 
-      var idValues = sheet.getRange(2, 1, lastRow - 1, 1).getDisplayValues();
+      var deleteRows = sheet.getRange(2, 1, lastRow - 1, HEADERS.length).getDisplayValues();
       var targetRowIndex = -1;
+      var deleteUnit = "Bersama";
 
-      for (var m = 0; m < idValues.length; m++) {
-        if (idValues[m][0] === deleteId) {
+      for (var m = 0; m < deleteRows.length; m++) {
+        if (deleteRows[m][0] === deleteId) {
           targetRowIndex = m + 2;
+          deleteUnit = String(deleteRows[m][12] || "Bersama").trim() || "Bersama";
           break;
         }
       }
@@ -1348,6 +1557,14 @@ function doPost(e) {
         return createJsonResponse({
           success: false,
           error: "Kegiatan dengan ID '" + deleteId + "' tidak ditemukan."
+        });
+      }
+
+      // Validasi otorisasi hapus
+      if (!isAuthorizedForUnit(auth.unit, deleteUnit)) {
+        return createJsonResponse({
+          success: false,
+          error: "Akses ditolak: Anda login sebagai admin " + auth.unit + " dan tidak dapat menghapus kegiatan unit " + deleteUnit + "."
         });
       }
 
@@ -1361,14 +1578,14 @@ function doPost(e) {
     }
 
     // ------------------------------------------------------------------------
-    // AKSI 9: UPDATE ARCHIVE STATUS (Evaluasi Pelaksanaan Kegiatan - Hanya Admin)
+    // AKSI 10: UPDATE ARCHIVE STATUS (Evaluasi Pelaksanaan Kegiatan - Hanya Admin Berwenang)
     // ------------------------------------------------------------------------
     else if (action === "updateArchiveStatus") {
-      if (!isValidAdminToken(clientToken)) {
+      if (!auth.valid) {
         return createJsonResponse({
           success: false,
           unauthorized: true,
-          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan PIN Admin."
+          error: "Akses ditolak: Anda tidak memiliki izin atau sesi admin telah kedaluwarsa. Silakan login kembali dengan Password Admin."
         });
       }
 
@@ -1411,11 +1628,14 @@ function doPost(e) {
           });
         }
 
-        var arcIdValues = arcSheet.getRange(2, 1, lastArcRow - 1, 1).getDisplayValues();
+        var arcRows = arcSheet.getRange(2, 1, lastArcRow - 1, ARCHIVE_HEADERS.length).getDisplayValues();
         var targetArcRow = -1;
-        for (var p = 0; p < arcIdValues.length; p++) {
-          if (arcIdValues[p][0] === targetArchiveId) {
+        var arcUnit = "Bersama";
+
+        for (var p = 0; p < arcRows.length; p++) {
+          if (arcRows[p][0] === targetArchiveId) {
             targetArcRow = p + 2;
+            arcUnit = String(arcRows[p][14] || "Bersama").trim() || "Bersama";
             break;
           }
         }
@@ -1424,6 +1644,14 @@ function doPost(e) {
           return createJsonResponse({
             success: false,
             error: "Kegiatan arsip dengan ID '" + targetArchiveId + "' tidak ditemukan."
+          });
+        }
+
+        // Validasi otorisasi evaluasi arsip
+        if (!isAuthorizedForUnit(auth.unit, arcUnit)) {
+          return createJsonResponse({
+            success: false,
+            error: "Akses ditolak: Anda login sebagai admin " + auth.unit + " dan tidak dapat mengevaluasi kegiatan unit " + arcUnit + "."
           });
         }
 
@@ -1463,25 +1691,8 @@ function doPost(e) {
 }
 
 // ============================================================================
-// PENGIRIMAN EMAIL REMINDER HARIAN (EMAIL DIGEST)
+// PENGIRIMAN EMAIL REMINDER HARIAN (EMAIL DIGEST DENGAN LABEL UNIT)
 // ============================================================================
-/**
- * PANDUAN PENGATURAN TRIGGER OTOMATIS:
- * 1. Buka editor Google Apps Script ini.
- * 2. Di bilah sisi kiri (left sidebar), klik ikon jam pemicu (Triggers / Pemicu).
- * 3. Klik tombol biru "+ Add Trigger" (+ Tambahkan Pemicu) di kanan bawah.
- * 4. Tentukan konfigurasi pemicu:
- *    - Choose which function to run : sendDailyReminderEmails
- *    - Choose which deployment     : Head
- *    - Select event source          : Time-driven (Berdasarkan waktu)
- *    - Select type of time based trigger : Day timer (Penentu waktu hari)
- *    - Select time of day           : Pilih jendela waktu, misal: 06:00 to 07:00 (Pagi hari)
- * 5. Klik "Save" (Simpan) dan setujui izin akses akun jika diminta.
- *
- * CATATAN KUOTA EMAIL (Google MailApp):
- * Akun Gmail standar (@gmail.com) memiliki kuota ~100 penerima/hari.
- * Akun Google Workspace institusi/sekolah memiliki kuota hingga ~1.500 penerima/hari.
- */
 function sendDailyReminderEmails() {
   try {
     var todayStr = Utilities.formatDate(new Date(), "Asia/Makassar", "yyyy-MM-dd");
@@ -1576,8 +1787,10 @@ function sendDailyReminderEmails() {
     for (var k = 0; k < todayEvents.length; k++) {
       var ev = todayEvents[k];
       var jamRange = (ev.jam_mulai || "-") + " - " + (ev.jam_selesai || "-") + " WITA";
+      var unitLabel = ev.unit || "Bersama";
 
-      textLines.push((k + 1) + ". " + ev.judul);
+      textLines.push((k + 1) + ". " + ev.judul + " [" + unitLabel + "]");
+      textLines.push("   - Unit    : " + unitLabel);
       textLines.push("   - Divisi  : " + (ev.divisi || "-"));
       if (ev.petugas) textLines.push("   - Petugas : " + ev.petugas);
       textLines.push("   - Waktu   : " + jamRange);
@@ -1585,10 +1798,30 @@ function sendDailyReminderEmails() {
       if (ev.deskripsi) textLines.push("   - Catatan : " + ev.deskripsi);
       textLines.push("");
 
+      var unitBadgeBg = "#f1f5f9";
+      var unitBadgeColor = "#475569";
+      var unitBadgeBorder = "#cbd5e1";
+      if (unitLabel === "Ikhwan") {
+        unitBadgeBg = "#e0f2fe";
+        unitBadgeColor = "#0369a1";
+        unitBadgeBorder = "#bae6fd";
+      } else if (unitLabel === "Akhwat") {
+        unitBadgeBg = "#fce7f3";
+        unitBadgeColor = "#be185d";
+        unitBadgeBorder = "#fbcfe8";
+      }
+
       htmlEventsList += `
         <div style="background-color: #f8fafc; border-left: 4px solid #10b981; border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-          <h3 style="margin: 0 0 6px 0; color: #0f172a; font-size: 16px;">${escapeHtml(ev.judul)}</h3>
+          <div style="margin: 0 0 6px 0; display: flex; align-items: center; justify-content: space-between;">
+            <h3 style="margin: 0; color: #0f172a; font-size: 16px;">${escapeHtml(ev.judul)}</h3>
+            <span style="background-color: ${unitBadgeBg}; color: ${unitBadgeColor}; border: 1px solid ${unitBadgeBorder}; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 9999px; margin-left: 8px;">${escapeHtml(unitLabel)}</span>
+          </div>
           <table style="width: 100%; border-collapse: collapse; font-size: 13px; color: #334155; line-height: 1.6;">
+            <tr>
+              <td style="width: 80px; font-weight: bold; vertical-align: top;">Unit</td>
+              <td>: <strong style="color: ${unitBadgeColor};">${escapeHtml(unitLabel)}</strong></td>
+            </tr>
             <tr>
               <td style="width: 80px; font-weight: bold; vertical-align: top;">Divisi</td>
               <td>: ${escapeHtml(ev.divisi || "-")}</td>

@@ -1,6 +1,6 @@
 # 📅 Jadwal Proker OSIS
 
-Aplikasi web modern **Jadwal Proker OSIS** dengan manajemen kegiatan lengkap, sistem otentikasi PIN Administrator berkeamanan token HMAC, notifikasi agenda harian via email otomatis (*daily email digest*), serta riwayat dan evaluasi pelaksanaan program kerja (*auto-archive & evaluation*).
+Aplikasi web modern **Jadwal Proker OSIS** dengan manajemen kegiatan lengkap, sistem otentikasi Password Administrator berkeamanan token HMAC, notifikasi agenda harian via email otomatis (*daily email digest*), serta riwayat dan evaluasi pelaksanaan program kerja (*auto-archive & evaluation*).
 
 Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScript** di sisi frontend (tanpa framework, tanpa build tools) dan **Google Apps Script Web App** dengan database terstruktur **Google Sheets** di sisi backend.
 
@@ -13,7 +13,7 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
 4. [🚀 Panduan Backend: Google Apps Script & Google Sheets](#-panduan-backend-google-apps-script--google-sheets)
    - [Langkah 1: Siapkan Google Sheet & Salin Spreadsheet ID](#langkah-1-siapkan-google-sheet--salin-spreadsheet-id)
    - [Langkah 2: Salin Kode Backend & Konfigurasi Konstanta](#langkah-2-salin-kode-backend--konfigurasi-konstanta)
-   - [Langkah 3: Konfigurasi Script Properties (ADMIN_PIN)](#langkah-3-konfigurasi-script-properties-admin_pin)
+   - [Langkah 3: Konfigurasi Script Properties (ADMIN_PASSWORD)](#langkah-3-konfigurasi-script-properties-admin_password)
    - [Langkah 4: Setel Zona Waktu Proyek (Asia/Makassar - WITA)](#langkah-4-setel-zona-waktu-proyek-asiamakassar---wita)
    - [Langkah 5: Jalankan Setup Database Awal (setupAll)](#langkah-5-jalankan-setup-database-awal-setupall)
    - [Langkah 6: Publikasikan Web App & Pembaruan Versi](#langkah-6-publikasikan-web-app--pembaruan-versi)
@@ -76,10 +76,15 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
   - Toggle tema instan dengan transisi halus.
   - Preferensi tema tersimpan otomatis di `localStorage` peramban.
 
-- **🔐 Keamanan & Otentikasi Administrator Berbasis PIN**:
+- **🏷️ Filter Tab Unit Satuan Eksklusif (Semua, Ikhwan, Akhwat, Bersama)**:
+  - Bilah filter interaktif di atas kalender dengan 4 tab: **Semua Unit**, **Ikhwan** (`fa-user`), **Akhwat** (`fa-user`), dan **Bersama** (`fa-people-group`).
+  - Menghitung jumlah kegiatan secara eksklusif dan presisi pada badge angka setiap tab.
+  - Memfilter secara sinkron pada Kalender, Panel Agenda, Widget Kegiatan Mendatang, serta Riwayat Arsip & Evaluasi.
+
+- **🔐 Keamanan & Otentikasi Administrator Berbasis Password**:
   - Akses publik bersifat *Read-Only* (pengunjung umum hanya dapat melihat kalender, membuka detail kegiatan, dan mendaftar notifikasi email).
-  - Operasi manipulasi data (Tambah, Edit, Hapus Kegiatan, serta Evaluasi Arsip) diproteksi oleh **PIN Admin**.
-  - PIN disimpan secara aman di **Script Properties** Google Apps Script (tidak terekspos di frontend maupun Google Sheets).
+  - Operasi manipulasi data (Tambah, Edit, Hapus Kegiatan, serta Evaluasi Arsip) diproteksi oleh **Password Admin**.
+  - Password disimpan secara aman di **Script Properties** Google Apps Script (tidak terekspos di frontend maupun Google Sheets).
   - Otentikasi menghasilkan token sesi sementara yang ditandatangani dengan algoritma **HMAC-SHA256** dan memiliki masa berlaku 1 jam (3600 detik).
   - Mendukung verifikasi token otomatis (`verifySession`) dan pencabutan sesi saat keluar (`logout`).
 
@@ -103,7 +108,7 @@ Dibangun menggunakan **HTML5 semantik, Vanilla CSS3 murni, dan Vanilla JavaScrip
 
 ```text
 jadwal-proker-OSIS-IQIS/
-├── Code.gs          # Backend: Google Apps Script (CRUD, Otentikasi PIN, Email Digest, Auto-Archive)
+├── Code.gs          # Backend: Google Apps Script (CRUD, Otentikasi Password, Email Digest, Auto-Archive)
 ├── index.html       # Frontend: Struktur antarmuka web semantik dan modal dialog
 ├── style.css        # Styling: Sistem desain modern, tema Emerald Green, Dark/Light mode, responsif
 ├── script.js        # Frontend Logic: Kalender, manajemen state, otentikasi admin, modal & komunikasi API
@@ -161,14 +166,17 @@ Ikuti langkah-langkah berikut secara berurutan untuk menyiapkan backend di akun 
 
 5. Simpan file dengan menekan `Ctrl + S` (`Cmd + S` di Mac).
 
-### Langkah 3: Konfigurasi Script Properties (ADMIN_PIN)
-PIN Administrator tidak boleh ditulis di dalam kode sumber. PIN disimpan pada fitur rahasia *Script Properties*:
+### Langkah 3: Konfigurasi Script Properties (ADMIN_PASSWORD)
+Password Administrator tidak boleh ditulis di dalam kode sumber. Password disimpan pada fitur rahasia *Script Properties*:
 1. Di sidebar sebelah kiri editor Apps Script, klik ikon roda gigi ⚙️ **Project Settings** (Setelan Proyek).
 2. Gulir ke bawah hingga bagian **Script Properties** (Properti Skrip).
 3. Klik tombol **Add script property** (Tambahkan properti skrip).
 4. Masukkan rincian berikut:
-   - **Property**: `ADMIN_PIN`
-   - **Value**: Masukkan 6 hingga 8 digit angka rahasia Anda (contoh: `123456` atau `889900`).
+   - **Property**: `ADMIN_PASSWORD_IKHWAN`
+   - **Value**: Masukkan password rahasia untuk unit Ikhwan (contoh: `Ikhwan#2026!` atau teks alfanumerik pilihan Anda).
+   - Klik **Add script property** lagi.
+   - **Property**: `ADMIN_PASSWORD_AKHWAT`
+   - **Value**: Masukkan password rahasia untuk unit Akhwat (contoh: `Akhwat#2026!` atau teks alfanumerik pilihan Anda).
 5. Klik **Save script properties**.
 
 > 🔒 **Keamanan**: Properti `SESSION_SECRET` (kunci enkripsi HMAC) akan dibuat otomatis oleh skrip saat pertama kali dijalankan. Anda tidak perlu membuat `SESSION_SECRET` secara manual.
@@ -357,9 +365,9 @@ Menyimpan kegiatan lampau (lebih dari 24 jam setelah waktu selesai) beserta eval
 - **Penyebab**: Konstanta `SPREADSHEET_ID` di file `Code.gs` masih berisi ID contoh lama atau ID spreadsheet lain.
 - **Solusi**: Buka Google Sheet Anda, salin ID dari URL (antara `/d/` dan `/edit`), tempelkan ke variabel `var SPREADSHEET_ID = "..."` di `Code.gs`, simpan (`Ctrl+S`), lalu jalankan kembali fungsi `setupAll`.
 
-### 2. Muncul Pesan "ADMIN_PIN belum disetel di Script Properties"?
-- **Penyebab**: Properti skrip `ADMIN_PIN` belum dibuat di setelan Apps Script.
-- **Solusi**: Di editor Apps Script, buka ⚙️ **Project Settings** > scroll ke **Script Properties** > klik **Add script property** > masukkan Property: `ADMIN_PIN`, Value: `PIN_ANDA` > klik **Save**.
+### 2. Muncul Pesan "ADMIN_PASSWORD_IKHWAN atau ADMIN_PASSWORD_AKHWAT belum disetel di Script Properties"?
+- **Penyebab**: Properti skrip `ADMIN_PASSWORD_IKHWAN` atau `ADMIN_PASSWORD_AKHWAT` belum dibuat di setelan Apps Script.
+- **Solusi**: Di editor Apps Script, buka ⚙️ **Project Settings** > scroll ke **Script Properties** > klik **Add script property** > masukkan Property: `ADMIN_PASSWORD_IKHWAN` dan `ADMIN_PASSWORD_AKHWAT` beserta password rahasia masing-masing > klik **Save**.
 
 ### 3. Batas Kuota Email Harian Google (Daily Email Quota)
 - Google membatasi pengiriman email harian:

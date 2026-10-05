@@ -50,10 +50,10 @@
   --divisi-wirausaha-border: rgba(8, 145, 178, 0.25);
   --divisi-wirausaha-text: #0e7490;
 
-  --divisi-bersama: #78716c; /* Stone */
-  --divisi-bersama-bg: rgba(120, 113, 108, 0.12);
-  --divisi-bersama-border: rgba(120, 113, 108, 0.25);
-  --divisi-bersama-text: #57534e;
+  --divisi-bersama: #0f766e; /* Teal */
+  --divisi-bersama-bg: rgba(15, 118, 110, 0.12);
+  --divisi-bersama-border: rgba(15, 118, 110, 0.25);
+  --divisi-bersama-text: #115e59;
 
   --divisi-lainnya: #64748b; /* Neutral Gray */
   --divisi-lainnya-bg: rgba(100, 116, 139, 0.12);
@@ -151,10 +151,10 @@
   --divisi-wirausaha-border: rgba(34, 211, 238, 0.35);
   --divisi-wirausaha-text: #a5f3fc;
 
-  --divisi-bersama: #a8a29e; /* Stone */
-  --divisi-bersama-bg: rgba(168, 162, 158, 0.2);
-  --divisi-bersama-border: rgba(168, 162, 158, 0.35);
-  --divisi-bersama-text: #e7e5e4;
+  --divisi-bersama: #2dd4bf; /* Teal */
+  --divisi-bersama-bg: rgba(45, 212, 191, 0.2);
+  --divisi-bersama-border: rgba(45, 212, 191, 0.35);
+  --divisi-bersama-text: #99f6e4;
 
   --divisi-lainnya: #94a3b8; /* Neutral Gray */
   --divisi-lainnya-bg: rgba(148, 163, 184, 0.2);
@@ -1354,6 +1354,8 @@ button.btn-text:focus-visible,
   border-left-color: var(--divisi-lainnya);
 }
 
+
+
 .upcoming-item-left {
   display: flex;
   align-items: center;
@@ -1675,6 +1677,8 @@ button.btn-text:focus-visible,
   border-color: var(--divisi-lainnya);
   border-left: 4px dashed var(--divisi-lainnya);
 }
+
+
 
 /* Badge Status Event */
 .status-badge {
@@ -3514,6 +3518,27 @@ span.flatpickr-weekday {
     padding: 0.625rem 0.75rem;
   }
 
+  .upcoming-item-meta {
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .upcoming-item-meta .divisi-badge {
+    white-space: normal;
+    word-break: break-word;
+    flex-shrink: 1;
+    max-width: 100%;
+    line-height: 1.3;
+    font-size: 0.6875rem;
+    padding: 0.15rem 0.5rem;
+  }
+
+  .upcoming-item-meta .divisi-badge span {
+    word-break: break-word;
+    white-space: normal;
+  }
+
   .modal-backdrop {
     padding: 0.75rem 0.5rem;
     align-items: center;
@@ -3985,11 +4010,11 @@ span.flatpickr-weekday {
 }
 
 .pin-input {
-  letter-spacing: 0.35em;
-  font-size: 1.25rem;
-  font-weight: 700;
-  text-align: center;
-  padding-left: 2.75rem;
+  letter-spacing: normal;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  text-align: left;
+  padding-left: 0.875rem;
   padding-right: 2.75rem;
   height: 46px;
 }
@@ -4517,4 +4542,486 @@ body:not(.is-admin) .event-actions {
   .detail-admin-actions .btn {
     flex: 1;
   }
-}
+}
+
+/* ==========================================================================
+   FEATURE 1: UNIT SATUAN FILTER TOOLBAR & BADGES
+   ========================================================================== */
+.unit-filter-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1.25rem;
+  padding: 0.625rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+.unit-filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.unit-filter-label svg {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.unit-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.unit-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.unit-filter-text {
+  white-space: nowrap;
+}
+
+/* Category-specific Hover States (When NOT active) */
+.unit-filter-btn:hover:not(.active) {
+  background: var(--primary-light);
+  color: var(--primary-text);
+  border-color: var(--border-focus);
+}
+
+.unit-filter-btn.unit-btn-ikhwan:hover:not(.active),
+.unit-filter-btn[data-unit="Ikhwan"]:hover:not(.active) {
+  background: rgba(2, 132, 199, 0.08);
+  border-color: rgba(2, 132, 199, 0.45);
+  color: #0284c7;
+}
+
+.unit-filter-btn.unit-btn-ikhwan:hover:not(.active) .unit-filter-icon,
+.unit-filter-btn[data-unit="Ikhwan"]:hover:not(.active) .unit-filter-icon {
+  color: #0284c7;
+}
+
+.unit-filter-btn.unit-btn-akhwat:hover:not(.active),
+.unit-filter-btn[data-unit="Akhwat"]:hover:not(.active) {
+  background: rgba(219, 39, 119, 0.08);
+  border-color: rgba(219, 39, 119, 0.45);
+  color: #db2777;
+}
+
+.unit-filter-btn.unit-btn-akhwat:hover:not(.active) .unit-filter-icon,
+.unit-filter-btn[data-unit="Akhwat"]:hover:not(.active) .unit-filter-icon {
+  color: #db2777;
+}
+
+.unit-filter-btn.unit-btn-bersama:hover:not(.active),
+.unit-filter-btn[data-unit="Bersama"]:hover:not(.active) {
+  background: rgba(15, 118, 110, 0.08);
+  border-color: rgba(15, 118, 110, 0.45);
+  color: #0f766e;
+}
+
+.unit-filter-btn.unit-btn-bersama:hover:not(.active) .unit-filter-icon,
+.unit-filter-btn[data-unit="Bersama"]:hover:not(.active) .unit-filter-icon {
+  color: #0f766e;
+}
+
+/* Dark theme hover adjustments */
+[data-theme="dark"] .unit-filter-btn:hover:not(.active) {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--primary-text);
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .unit-filter-btn.unit-btn-ikhwan:hover:not(.active),
+[data-theme="dark"] .unit-filter-btn[data-unit="Ikhwan"]:hover:not(.active) {
+  background: rgba(56, 189, 248, 0.14);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .unit-filter-btn.unit-btn-ikhwan:hover:not(.active) .unit-filter-icon,
+[data-theme="dark"] .unit-filter-btn[data-unit="Ikhwan"]:hover:not(.active) .unit-filter-icon {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .unit-filter-btn.unit-btn-akhwat:hover:not(.active),
+[data-theme="dark"] .unit-filter-btn[data-unit="Akhwat"]:hover:not(.active) {
+  background: rgba(244, 114, 182, 0.14);
+  border-color: rgba(244, 114, 182, 0.45);
+  color: #f472b6;
+}
+
+[data-theme="dark"] .unit-filter-btn.unit-btn-akhwat:hover:not(.active) .unit-filter-icon,
+[data-theme="dark"] .unit-filter-btn[data-unit="Akhwat"]:hover:not(.active) .unit-filter-icon {
+  color: #f472b6;
+}
+
+[data-theme="dark"] .unit-filter-btn.unit-btn-bersama:hover:not(.active),
+[data-theme="dark"] .unit-filter-btn[data-unit="Bersama"]:hover:not(.active) {
+  background: rgba(45, 212, 191, 0.14);
+  border-color: rgba(45, 212, 191, 0.45);
+  color: #2dd4bf;
+}
+
+[data-theme="dark"] .unit-filter-btn.unit-btn-bersama:hover:not(.active) .unit-filter-icon,
+[data-theme="dark"] .unit-filter-btn[data-unit="Bersama"]:hover:not(.active) .unit-filter-icon {
+  color: #2dd4bf;
+}
+
+/* Active states (Higher specificity / priority over hover) */
+.unit-filter-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+.unit-filter-btn.active:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #ffffff;
+}
+
+.unit-filter-btn.unit-btn-ikhwan.active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.unit-filter-btn.unit-btn-ikhwan.active:hover {
+  background: #0369a1;
+  border-color: #0369a1;
+  color: #ffffff;
+}
+
+.unit-filter-btn.unit-btn-akhwat.active {
+  background: #db2777;
+  border-color: #db2777;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.35);
+}
+
+.unit-filter-btn.unit-btn-akhwat.active:hover {
+  background: #be185d;
+  border-color: #be185d;
+  color: #ffffff;
+}
+
+.unit-filter-btn.unit-btn-bersama.active {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.35);
+}
+
+.unit-filter-btn.unit-btn-bersama.active:hover {
+  background: #115e59;
+  border-color: #115e59;
+  color: #ffffff;
+}
+
+/* Unit Filter Icons */
+.unit-filter-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.unit-btn-ikhwan .unit-filter-icon {
+  color: #0284c7;
+}
+
+.unit-btn-akhwat .unit-filter-icon {
+  color: #db2777;
+}
+
+.unit-btn-bersama .unit-filter-icon {
+  color: #0f766e;
+}
+
+[data-theme="dark"] .unit-btn-ikhwan .unit-filter-icon {
+  color: #38bdf8;
+}
+
+[data-theme="dark"] .unit-btn-akhwat .unit-filter-icon {
+  color: #f472b6;
+}
+
+[data-theme="dark"] .unit-btn-bersama .unit-filter-icon {
+  color: #2dd4bf;
+}
+
+.unit-filter-btn.active .unit-filter-icon,
+.unit-filter-btn.active:hover .unit-filter-icon {
+  color: #ffffff !important;
+}
+
+/* Unit Filter Badges */
+.unit-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.08);
+  color: inherit;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+[data-theme="dark"] .unit-filter-badge {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.unit-filter-btn.active .unit-filter-badge,
+.unit-filter-btn.active:hover .unit-filter-badge {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+}
+
+/* Mobile Responsive Layout (640px and below) */
+@media (max-width: 640px) {
+  .unit-filter-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .unit-filter-label {
+    width: 100%;
+    font-size: 0.75rem;
+  }
+
+  .unit-filter-group {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .unit-filter-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.42rem 0.45rem;
+    font-size: 0.78125rem;
+    gap: 0.35rem;
+  }
+
+  .unit-filter-btn .unit-filter-icon {
+    font-size: 0.8125rem;
+  }
+
+  .unit-filter-btn .unit-filter-badge {
+    padding: 0.1rem 0.35rem;
+    font-size: 0.65rem;
+  }
+}
+
+/* Unit Badges on Cards & Details */
+.unit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.unit-badge i {
+  font-size: 0.75rem;
+}
+
+.unit-badge-ikhwan {
+  background-color: rgba(2, 132, 199, 0.12);
+  color: #0369a1;
+  border: 1px solid rgba(2, 132, 199, 0.28);
+}
+
+.unit-badge-akhwat {
+  background-color: rgba(219, 39, 119, 0.12);
+  color: #be185d;
+  border: 1px solid rgba(219, 39, 119, 0.28);
+}
+
+.unit-badge-bersama {
+  background-color: rgba(15, 118, 110, 0.12);
+  color: #115e59;
+  border: 1px solid rgba(15, 118, 110, 0.25);
+}
+
+[data-theme="dark"] .unit-badge-ikhwan {
+  background-color: rgba(56, 189, 248, 0.18);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+[data-theme="dark"] .unit-badge-akhwat {
+  background-color: rgba(244, 114, 182, 0.18);
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.35);
+}
+
+[data-theme="dark"] .unit-badge-bersama {
+  background-color: rgba(45, 212, 191, 0.18);
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.35);
+}
+
+/* Custom Unit Dropdown Option Icons */
+.unit-option-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.icon-unit-ikhwan {
+  color: #0284c7;
+}
+
+.icon-unit-akhwat {
+  color: #db2777;
+}
+
+.icon-unit-bersama {
+  color: #0f766e;
+}
+
+.custom-unit-options {
+  background-color: var(--bg-card) !important;
+  opacity: 1 !important;
+}
+
+.unit-selected-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--text-main);
+  min-width: 0;
+}
+
+/* Custom Lokasi Dropdown Option Icons */
+.lokasi-option-icon {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  line-height: 1;
+  color: var(--primary);
+}
+
+.icon-lokasi-sekolah {
+  color: #2563eb;
+}
+
+.icon-lokasi-masjid {
+  color: #059669;
+}
+
+.icon-lokasi-lainnya {
+  color: #d97706;
+}
+
+.custom-lokasi-options {
+  background-color: var(--bg-card) !important;
+  opacity: 1 !important;
+}
+
+.lokasi-selected-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+  color: var(--text-main);
+  min-width: 0;
+}
+
+.lokasi-selected-display i,
+.lokasi-selected-display .fa-solid {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+/* Admin Role Pill in Header */
+.admin-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+}
+
+.admin-role-pill.role-ikhwan {
+  background: rgba(2, 132, 199, 0.15);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.3);
+}
+
+.admin-role-pill.role-akhwat {
+  background: rgba(219, 39, 119, 0.15);
+  color: #db2777;
+  border: 1px solid rgba(219, 39, 119, 0.3);
+}
+
+[data-theme="dark"] .admin-role-pill.role-ikhwan {
+  background: rgba(56, 189, 248, 0.2);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+[data-theme="dark"] .admin-role-pill.role-akhwat {
+  background: rgba(244, 114, 182, 0.2);
+  color: #f472b6;
+  border-color: rgba(244, 114, 182, 0.4);
+}
+

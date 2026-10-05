@@ -15,7 +15,6 @@
 // >>> TEMPELKAN WEB APP URL GOOGLE APPS SCRIPT ANDA DI SINI <<<
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFOPlodNxu0JSQkpDGnZ4wd89ryTAWjA8geQvBOGduYeLJUjc4va9e7iXDfNoaWAam/exec";
 
-
 // Contoh: "https://script.google.com/macros/s/AKfycbxAbCdEfGhIjKlMnOpQrStUvWxYz/exec"
 
 /**
@@ -32,6 +31,46 @@ function escapeHtml(str) {
 }
 
 /**
+ * Pilihan Unit Satuan OSIS IQIS
+ */
+const UNIT_OPTIONS = [
+  { name: "Ikhwan", key: "ikhwan", icon: "fa-solid fa-user", color: "#0284c7" },
+  { name: "Akhwat", key: "akhwat", icon: "fa-solid fa-user", color: "#db2777" },
+  { name: "Bersama", key: "bersama", icon: "fa-solid fa-people-group", color: "#0f766e" }
+];
+
+/**
+ * Helper untuk info Unit Satuan
+ */
+function getUnitInfo(unitName) {
+  const clean = String(unitName || "Bersama").trim().toLowerCase();
+  if (clean === "ikhwan") return UNIT_OPTIONS[0];
+  if (clean === "akhwat") return UNIT_OPTIONS[1];
+  return UNIT_OPTIONS[2];
+}
+
+/**
+ * Helper otorisasi: Memeriksa apakah Admin aktif berhak membuat/mengubah/menghapus/menilai kegiatan unit ini
+ */
+function canAdminManageUnit(targetUnit) {
+  if (!AuthState.isAdmin) return false;
+  if (!AuthState.unit) return true; // Fallback jika tidak ada unit spesifik
+  const unit = String(targetUnit || "Bersama").trim();
+  if (unit.toLowerCase() === "bersama") return true;
+  return unit.toLowerCase() === AuthState.unit.toLowerCase();
+}
+
+/**
+ * Helper filter: Memeriksa apakah kegiatan cocok dengan unit tab filter yang sedang aktif
+ */
+function matchesUnitFilter(eventUnit, activeFilter = null) {
+  const filter = (activeFilter || AppState.unitFilter || "Semua").trim();
+  if (filter === "Semua") return true;
+  const unit = String(eventUnit || "Bersama").trim();
+  return unit.toLowerCase() === filter.toLowerCase();
+}
+
+/**
  * Pilihan Divisi Penanggung Jawab Program Kerja OSIS (Font Awesome Icons & Color Map)
  */
 const DIVISI_OPTIONS = [
@@ -39,7 +78,7 @@ const DIVISI_OPTIONS = [
   { name: "Kepemimpinan dan Kebahasaan", key: "kepemimpinan", icon: "fa-solid fa-language", color: "#7c3aed" },
   { name: "Komunikasi Media Kreatif", key: "media", icon: "fa-solid fa-photo-film", color: "#e11d48" },
   { name: "Kewirausahaan dan Sosial Lingkungan", key: "wirausaha", icon: "fa-solid fa-seedling", color: "#0891b2" },
-  { name: "Bersama / Proker Bersama", key: "bersama", icon: "fa-solid fa-people-group", color: "#78716c" },
+  { name: "Bersama / Proker Bersama", key: "bersama", icon: "fa-solid fa-people-group", color: "#0f766e" },
   { name: "Lainnya", key: "lainnya", icon: "fa-solid fa-ellipsis", color: "var(--text-muted)" }
 ];
 
@@ -49,6 +88,9 @@ const DIVISI_OPTIONS = [
 function getDivisiInfo(name) {
   if (!name) return null;
   const clean = String(name).trim();
+  if (clean.toLowerCase() === "bersama" || clean.toLowerCase() === "bersama / proker bersama") {
+    return DIVISI_OPTIONS.find(d => d.key === "bersama");
+  }
   const found = DIVISI_OPTIONS.find(d => d.name.toLowerCase() === clean.toLowerCase() && d.key !== "lainnya");
   if (found) return found;
 
@@ -72,15 +114,14 @@ function getDivisiKey(name) {
 
 /**
  * Data awal (Seed / Mock Data)
- * Otomatis digunakan jika APPS_SCRIPT_URL masih kosong atau saat pertama kali testing,
- * agar penguji/guru/siswa dapat langsung melihat tampilan UI kalender yang interaktif.
  */
 const SEED_EVENTS = [
   {
     id: "evt_demo_1",
-    judul: "Kajian Rutin & Pembinaan Karakter",
-    deskripsi: "Kajian keislaman mingguan dan pembinaan akhlak siswa muslim di masjid sekolah.",
-    lokasi: "Masjid Al-Ikhlas",
+    judul: "Kajian Rutin & Pembinaan Karakter Ikhwan",
+    deskripsi: "Kajian keislaman mingguan dan pembinaan akhlak santri muslim di masjid sekolah.",
+    lokasi: "Masjid Pendidikan IQIS",
+    unit: "Ikhwan",
     divisi: "Keislaman dan Pembinaan Karakter",
     proker: "Kajian Pekanan & Tahsin",
     petugas: "Ahmad Fauzi & Tim Keislaman",
@@ -92,9 +133,10 @@ const SEED_EVENTS = [
   },
   {
     id: "evt_demo_2",
-    judul: "Latihan Dasar Kepemimpinan Siswa (LDKS)",
-    deskripsi: "Pelatihan kepemimpinan dan public speaking untuk calon pengurus OSIS periode baru.",
-    lokasi: "Aula Graha Bhakti",
+    judul: "Latihan Dasar Kepemimpinan Siswa (LDKS) Akhwat",
+    deskripsi: "Pelatihan kepemimpinan dan public speaking untuk calon pengurus OSIS Akhwat.",
+    lokasi: "Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)",
+    unit: "Akhwat",
     divisi: "Kepemimpinan dan Kebahasaan",
     proker: "LDKS & English Club",
     petugas: "Siti Rahma & BPH OSIS",
@@ -108,7 +150,8 @@ const SEED_EVENTS = [
     id: "evt_demo_3",
     judul: "Liputan Dokumentasi & Podcast OSIS",
     deskripsi: "Produksi konten podcast sekolah dan publikasi dokumentasi kegiatan di media sosial.",
-    lokasi: "Studio Podcast Media",
+    lokasi: "Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)",
+    unit: "Bersama",
     divisi: "Komunikasi Media Kreatif",
     proker: "Podcast Edukasi & Konten Kreatif",
     petugas: "Rian Hidayat & Tim Media",
@@ -121,8 +164,9 @@ const SEED_EVENTS = [
   {
     id: "evt_demo_4",
     judul: "Bazar Kewirausahaan & Aksi Peduli Lingkungan",
-    deskripsi: "Pameran produk kreativitas siswa dan aksi bersih lingkungan bersama komite sekolah.",
-    lokasi: "Area Gazebo & Kantin",
+    deskripsi: "Pameran produk kreativitas santri dan aksi bersih lingkungan bersama komite sekolah.",
+    lokasi: "Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)",
+    unit: "Ikhwan",
     divisi: "Kewirausahaan dan Sosial Lingkungan",
     proker: "Bazar Sekolah Hijau",
     petugas: "Nurul Aini & Div. Wirausaha",
@@ -136,7 +180,8 @@ const SEED_EVENTS = [
     id: "evt_demo_5",
     judul: "Rapat Pleno & Evaluasi Program Kerja Gabungan",
     deskripsi: "Evaluasi bulanan program kerja seluruh divisi OSIS bersama Pembina OSIS.",
-    lokasi: "Ruang Rapat Utama",
+    lokasi: "Masjid Pendidikan IQIS",
+    unit: "Bersama",
     divisi: "Bersama / Proker Bersama",
     proker: "Rapat Pleno Bulanan",
     petugas: "Ketua OSIS & Sekbid",
@@ -156,6 +201,7 @@ const AppState = {
   selectedDate: null,       // Tanggal aktif terpilih (format: YYYY-MM-DD)
   viewYear: 2026,           // Tahun tampilan kalender
   viewMonth: 8,             // Bulan tampilan kalender (0 = Jan, 8 = Sep)
+  unitFilter: "Semua",      // Filter Unit Aktif: "Semua" | "Ikhwan" | "Akhwat" | "Bersama"
   isLoading: false,         // Status pemanggilan API
   isLiveMode: false,        // True jika menggunakan Google Apps Script aktif
   showAllUpcoming: false,   // Toggle melihat semua kegiatan mendatang
@@ -167,6 +213,7 @@ const AppState = {
 // ==========================================================================
 const AuthState = {
   isAdmin: false,                     // Mode Tamu (Guest) secara default
+  unit: null,                         // "Ikhwan" | "Akhwat" | null
   token: null,                        // Token sesi admin sementara (HMAC-SHA256)
   expiresAt: null,                    // Waktu kedaluwarsa sesi (timestamp ms)
   SESSION_KEY: "osis_admin_session"   // Kunci penyimpanan sesi di sessionStorage
@@ -497,6 +544,8 @@ const ApiClient = {
     const rawData = Array.isArray(result.data) ? result.data : [];
     return rawData.map(item => ({
       ...item,
+      lokasi: item.lokasi || "",
+      unit: item.unit || "Bersama",
       divisi: item.divisi || "",
       proker: item.proker || "",
       petugas: item.petugas || "",
@@ -505,23 +554,25 @@ const ApiClient = {
   },
 
   /**
-   * 2. Login Admin menggunakan PIN
-   * Mengirimkan PIN ke Google Apps Script backend untuk divalidasi dengan Script Properties
+   * 2. Login Admin menggunakan Password
+   * Mengirimkan password ke Google Apps Script backend untuk divalidasi dengan Script Properties
    */
   async login(pin) {
     if (!this.hasConfiguredUrl()) {
-      // Mode Demo / Lokal: Validasi PIN demo (PIN minimal 6 digit angka)
+      // Mode Demo / Lokal: Validasi password demo
       const cleanPin = String(pin || "").trim();
-      if (!cleanPin || cleanPin.length < 6 || cleanPin.length > 8 || !/^\d+$/.test(cleanPin)) {
-        throw new Error("PIN Admin harus berupa 6–8 digit angka.");
+      if (!cleanPin) {
+        throw new Error("Password Admin tidak boleh kosong.");
       }
       const demoToken = "demo_token_" + Date.now();
       const expiresAt = Date.now() + (3600 * 1000);
+      const demoUnit = cleanPin.toLowerCase().includes("akhwat") || cleanPin.startsWith("2") ? "Akhwat" : "Ikhwan";
       return {
         success: true,
-        message: "Login admin berhasil (Mode Demo Lokal)",
+        message: `Login admin ${demoUnit} berhasil (Mode Demo Lokal)`,
         token: demoToken,
-        expiresAt: expiresAt
+        expiresAt: expiresAt,
+        unit: demoUnit
       };
     }
 
@@ -529,7 +580,8 @@ const ApiClient = {
     const payload = JSON.stringify({
       action: "login",
       data: {
-        pin: String(pin).trim()
+        pin: String(pin).trim(),
+        password: String(pin).trim()
       }
     });
 
@@ -548,7 +600,7 @@ const ApiClient = {
 
     const result = await response.json();
     if (!result.success) {
-      throw new Error(result.error || "Login gagal. Periksa kembali PIN Anda.");
+      throw new Error(result.error || "Login gagal. Periksa kembali Password Anda.");
     }
 
     return result;
@@ -582,7 +634,10 @@ const ApiClient = {
 
       if (!response.ok) return false;
       const result = await response.json();
-      return Boolean(result.success && result.valid);
+      if (result.success && result.valid) {
+        return { valid: true, unit: result.unit || "Ikhwan" };
+      }
+      return false;
     } catch (e) {
       console.warn("Gagal verifikasi sesi admin ke server:", e);
       return false;
@@ -630,6 +685,7 @@ const ApiClient = {
       if (action === "create") {
         const newEvent = {
           ...data,
+          unit: data.unit || "Bersama",
           id: "evt_" + new Date().getTime() + "_" + Math.floor(Math.random() * 1000)
         };
         events.push(newEvent);
@@ -642,7 +698,7 @@ const ApiClient = {
         if (index === -1) {
           throw new Error("Kegiatan tidak ditemukan di database lokal.");
         }
-        events[index] = { ...data };
+        events[index] = { ...data, unit: data.unit || events[index].unit || "Bersama" };
         localStorage.setItem("kalender_kegiatan_data", JSON.stringify(events));
         return { success: true, message: "Kegiatan berhasil diperbarui (Mode Demo)", data: events[index] };
       }
@@ -703,7 +759,8 @@ const ApiClient = {
           id: "arc_demo_1",
           judul: "Penyuluhan Bahaya Narkoba & Kenakalan Remaja",
           deskripsi: "Sosialisasi bersama BNN dan pihak kepolisian untuk seluruh siswa kelas X dan XI.",
-          lokasi: "Aula Graha Bhakti",
+          lokasi: "Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)",
+          unit: "Ikhwan",
           divisi: "Keislaman dan Pembinaan Karakter",
           proker: "Penyuluhan Karakter Remaja",
           petugas: "Divisi Keislaman",
@@ -719,7 +776,8 @@ const ApiClient = {
           id: "arc_demo_2",
           judul: "Lomba Pidato Bahasa Arab & Inggris Antar Kelas",
           deskripsi: "Kompetisi kebahasaan dalam rangka memperingati Bulan Bahasa sekolah.",
-          lokasi: "Lab Bahasa & Ruang Audio Visual",
+          lokasi: "Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)",
+          unit: "Akhwat",
           divisi: "Kepemimpinan dan Kebahasaan",
           proker: "Bulan Bahasa OSIS",
           petugas: "Divisi Kebahasaan",
@@ -758,7 +816,11 @@ const ApiClient = {
       throw new Error(result.error || "Gagal memuat riwayat kegiatan dari Arsip.");
     }
 
-    return Array.isArray(result.data) ? result.data : [];
+    const rawArchive = Array.isArray(result.data) ? result.data : [];
+    return rawArchive.map(item => ({
+      ...item,
+      unit: item.unit || "Bersama"
+    }));
   },
 
   /**
@@ -910,8 +972,22 @@ const UI = {
     }
 
     if (indicatorWrap) {
-      if (isAdmin) indicatorWrap.classList.remove("hidden");
-      else indicatorWrap.classList.add("hidden");
+      if (isAdmin) {
+        indicatorWrap.classList.remove("hidden");
+        const badgeAdmin = indicatorWrap.querySelector(".badge-admin");
+        if (badgeAdmin) {
+          const roleUnit = AuthState.unit || "OSIS";
+          badgeAdmin.className = `badge-admin admin-role-pill role-${(AuthState.unit || 'ikhwan').toLowerCase()}`;
+          badgeAdmin.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            <span>Admin ${escapeHtml(roleUnit)}</span>
+          `;
+        }
+      } else {
+        indicatorWrap.classList.add("hidden");
+      }
     }
 
     // 2. Tombol Riwayat / Arsip Kegiatan di Header
@@ -1011,6 +1087,10 @@ const UI = {
         }
       });
     });
+
+    if (typeof UnitFilterManager !== "undefined") {
+      UnitFilterManager.updateCounts();
+    }
   },
 
   /**
@@ -1020,9 +1100,10 @@ const UI = {
     const isToday = dateStr === todayStr;
     const isSelected = dateStr === AppState.selectedDate;
 
-    // Cari kegiatan yang berlangsung pada tanggal ini
+    // Cari kegiatan yang berlangsung pada tanggal ini dan sesuai filter unit aktif
     const dayEvents = AppState.events.filter(e =>
-      DateHelper.isDateInRange(dateStr, e.tanggal_mulai, e.tanggal_selesai)
+      DateHelper.isDateInRange(dateStr, e.tanggal_mulai, e.tanggal_selesai) &&
+      matchesUnitFilter(e.unit, AppState.unitFilter)
     );
     const hasEvents = dayEvents.length > 0;
 
@@ -1035,14 +1116,15 @@ const UI = {
     // Indikator titik kegiatan (maksimal 3 titik)
     let indicatorsHtml = "";
     if (hasEvents) {
-      const dotCount = Math.min(dayEvents.length, 3);
       let dots = "";
-      for (let k = 0; k < dotCount; k++) {
+      const maxDots = 3;
+      const count = Math.min(dayEvents.length, maxDots);
+
+      for (let k = 0; k < count; k++) {
         const ev = dayEvents[k];
         const isTentative = (ev.status || "confirmed").toLowerCase() === "tentative";
-        const divKey = getDivisiKey(ev.divisi);
-        const divisiClass = divKey ? ` divisi-${divKey}` : "";
-        dots += `<span class="event-dot${divisiClass}${isTentative ? " dot-tentative" : ""}"></span>`;
+        const divKey = getDivisiKey(ev.divisi) || "bersama";
+        dots += `<span class="event-dot divisi-${divKey}${isTentative ? " dot-tentative" : ""}"></span>`;
       }
       indicatorsHtml = `<div class="day-indicators">${dots}</div>`;
     }
@@ -1069,9 +1151,10 @@ const UI = {
     const selectedDate = AppState.selectedDate;
     dateTitle.textContent = DateHelper.formatIndoFull(selectedDate);
 
-    // Ambil kegiatan pada tanggal terpilih
+    // Ambil kegiatan pada tanggal terpilih yang sesuai filter unit aktif
     const matchingEvents = AppState.events.filter(e =>
-      DateHelper.isDateInRange(selectedDate, e.tanggal_mulai, e.tanggal_selesai)
+      DateHelper.isDateInRange(selectedDate, e.tanggal_mulai, e.tanggal_selesai) &&
+      matchesUnitFilter(e.unit, AppState.unitFilter)
     );
 
     countBadge.textContent = `${matchingEvents.length} Kegiatan`;
@@ -1093,14 +1176,18 @@ const UI = {
         ? `<span class="status-badge status-badge-tentative">Rencana</span>`
         : `<span class="status-badge status-badge-confirmed">Terkonfirmasi</span>`;
 
-      const divInfo = getDivisiInfo(event.divisi);
-      const divisiBadge = (event.divisi && divInfo)
-        ? `<span class="divisi-badge divisi-${divInfo.key}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(event.divisi)}</span></span>`
-        : "";
-      const borderClass = (divInfo && divInfo.key) ? ` border-divisi-${divInfo.key}` : "";
+      const unitInfo = getUnitInfo(event.unit);
+      const unitBadge = `<span class="unit-badge unit-badge-${unitInfo.key}"><i class="${unitInfo.icon}"></i> <span>${escapeHtml(unitInfo.name)}</span></span>`;
 
-      // Kontrol aksi (Edit & Hapus) hanya dirender jika pengguna adalah Administrator
-      const adminActionsHtml = AuthState.isAdmin ? `
+      const divInfo = getDivisiInfo(event.divisi);
+      const borderClass = divInfo ? ` border-divisi-${divInfo.key}` : "";
+      const divisiBadge = divInfo
+        ? `<span class="divisi-badge divisi-${divInfo.key}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(divInfo.name)}</span></span>`
+        : "";
+
+      // Kontrol aksi (Edit & Hapus) hanya dirender jika admin memiliki hak akses ke Unit ini
+      const isPermitted = canAdminManageUnit(event.unit);
+      const adminActionsHtml = (AuthState.isAdmin && isPermitted) ? `
           <div class="event-actions">
             <button class="action-btn edit-btn" data-id="${event.id}" title="Edit Kegiatan" aria-label="Edit kegiatan ${escapeHtml(event.judul)}">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1123,9 +1210,10 @@ const UI = {
       <div class="event-card${borderClass}${isTentative ? " status-tentative" : ""}" data-id="${event.id}" tabindex="0" role="button" aria-label="Detail kegiatan ${escapeHtml(event.judul)}">
         <div class="event-card-header">
           <div style="display: flex; flex-direction: column; gap: 0.35rem; min-width: 0;">
-            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
               <h4 class="event-title">${escapeHtml(event.judul)}</h4>
               ${statusBadge}
+              ${unitBadge}
               ${divisiBadge}
             </div>
           </div>
@@ -1160,7 +1248,6 @@ const UI = {
             </svg>
             <span>${escapeHtml(event.lokasi || "Lokasi belum ditentukan")}</span>
           </div>
-
 
           ${event.petugas ? `
             <div class="meta-item" title="Petugas / Penanggung Jawab">
@@ -1225,9 +1312,9 @@ const UI = {
 
     const todayStr = DateHelper.toDateString(new Date());
 
-    // Ambil kegiatan yang tanggal selesainya hari ini atau setelah hari ini
+    // Ambil kegiatan yang tanggal selesainya hari ini atau setelah hari ini dan sesuai filter unit
     const upcomingEvents = AppState.events
-      .filter(e => (e.tanggal_selesai || e.tanggal_mulai) >= todayStr)
+      .filter(e => (e.tanggal_selesai || e.tanggal_mulai) >= todayStr && matchesUnitFilter(e.unit, AppState.unitFilter))
       .sort((a, b) => {
         const dateCompare = (a.tanggal_mulai || "").localeCompare(b.tanggal_mulai || "");
         if (dateCompare !== 0) return dateCompare;
@@ -1259,6 +1346,12 @@ const UI = {
       const divInfo = getDivisiInfo(event.divisi);
       const borderClass = divInfo ? ` border-divisi-${divInfo.key}` : "";
 
+      const unitInfo = getUnitInfo(event.unit);
+      const unitBadge = `<span class="unit-badge unit-badge-${unitInfo.key}"><i class="${unitInfo.icon}"></i> <span>${escapeHtml(unitInfo.name)}</span></span>`;
+      const divisiBadge = divInfo
+        ? `<span class="divisi-badge divisi-${divInfo.key}" title="Divisi: ${escapeHtml(divInfo.name)}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(divInfo.name)}</span></span>`
+        : "";
+
       return `
         <div class="upcoming-item${borderClass}${isTentative ? " status-tentative" : ""}" data-date="${event.tanggal_mulai}" title="Klik untuk membuka tanggal kegiatan">
           <div class="upcoming-item-left">
@@ -1267,9 +1360,10 @@ const UI = {
               <span class="date-pill-month">${monthShort}</span>
             </div>
             <div class="upcoming-item-info">
-              <div style="display: flex; align-items: center; gap: 0.4rem; min-width: 0; width: 100%;">
+              <div style="display: flex; align-items: center; gap: 0.4rem; min-width: 0; width: 100%; flex-wrap: wrap;">
                 <div class="upcoming-item-title">${escapeHtml(event.judul)}</div>
                 ${isTentative ? `<span class="status-badge status-badge-tentative" style="padding: 0.05rem 0.4rem; font-size: 0.625rem; flex-shrink: 0;">Rencana</span>` : ""}
+                ${unitBadge}
               </div>
               <div class="upcoming-item-meta">
                 <div class="meta-item" title="Waktu Pelaksanaan">
@@ -1279,11 +1373,7 @@ const UI = {
                   </svg>
                   <span>${escapeHtml(event.jam_mulai || "-")} WITA</span>
                 </div>
-                ${event.divisi && divInfo ? `
-                <span class="divisi-badge divisi-${divInfo.key}" title="Divisi Penanggung Jawab">
-                  <i class="${divInfo.icon}"></i>
-                  <span>${escapeHtml(event.divisi)}</span>
-                </span>` : ""}
+                ${divisiBadge}
                 <div class="meta-item" title="Lokasi Kegiatan">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
@@ -1333,6 +1423,93 @@ const UI = {
         }
       });
     });
+  }
+};
+
+// ==========================================================================
+// CONTROLLER FILTER UNIT (IKHWAN / AKHWAT / SEMUA)
+// ==========================================================================
+const UnitFilterManager = {
+  STORAGE_KEY: "osis_unit_filter",
+
+  init() {
+    // Read preference
+    try {
+      const saved = localStorage.getItem(this.STORAGE_KEY);
+      if (saved && (saved === "Semua" || saved === "Ikhwan" || saved === "Akhwat" || saved === "Bersama")) {
+        AppState.unitFilter = saved;
+      }
+    } catch (e) {
+      AppState.unitFilter = "Semua";
+    }
+
+    this.updateButtonsUI();
+
+    const buttons = document.querySelectorAll(".unit-filter-btn");
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => {
+        const unit = btn.getAttribute("data-unit") || "Semua";
+        this.setFilter(unit);
+      });
+    });
+  },
+
+  setFilter(unit) {
+    AppState.unitFilter = unit;
+    try {
+      localStorage.setItem(this.STORAGE_KEY, unit);
+    } catch (e) { }
+
+    this.updateButtonsUI();
+    UI.renderCalendar();
+    UI.renderSelectedDateAgenda();
+    UI.renderUpcomingEvents();
+
+    if (typeof ArchiveModal !== "undefined" && ArchiveModal.cachedItems) {
+      ArchiveModal.renderList(ArchiveModal.cachedItems);
+    }
+  },
+
+  updateButtonsUI() {
+    const current = AppState.unitFilter || "Semua";
+    const buttons = document.querySelectorAll(".unit-filter-btn");
+    buttons.forEach(btn => {
+      const u = btn.getAttribute("data-unit");
+      const isMatch = (u === current);
+      btn.classList.toggle("active", isMatch);
+      btn.setAttribute("aria-selected", isMatch ? "true" : "false");
+    });
+  },
+
+  updateCounts() {
+    const countSemua = document.getElementById("badgeCountSemua");
+    const countIkhwan = document.getElementById("badgeCountIkhwan");
+    const countAkhwat = document.getElementById("badgeCountAkhwat");
+    const countBersama = document.getElementById("badgeCountBersama");
+
+    if (!countSemua) return;
+
+    const events = AppState.events || [];
+    const totalSemua = events.length;
+    let totalIkhwan = 0;
+    let totalAkhwat = 0;
+    let totalBersama = 0;
+
+    events.forEach(e => {
+      const u = String(e.unit || "Bersama").trim().toLowerCase();
+      if (u === "ikhwan") {
+        totalIkhwan++;
+      } else if (u === "akhwat") {
+        totalAkhwat++;
+      } else {
+        totalBersama++;
+      }
+    });
+
+    if (countSemua) countSemua.textContent = String(totalSemua);
+    if (countIkhwan) countIkhwan.textContent = String(totalIkhwan);
+    if (countAkhwat) countAkhwat.textContent = String(totalAkhwat);
+    if (countBersama) countBersama.textContent = String(totalBersama);
   }
 };
 
@@ -1413,6 +1590,12 @@ const StatusDropdown = {
   open() {
     if (typeof DivisiDropdown !== "undefined" && DivisiDropdown.isOpen) {
       DivisiDropdown.close();
+    }
+    if (typeof LokasiDropdown !== "undefined" && LokasiDropdown.isOpen) {
+      LokasiDropdown.close();
+    }
+    if (typeof UnitDropdown !== "undefined" && UnitDropdown.isOpen) {
+      UnitDropdown.close();
     }
     this.isOpen = true;
     this.wrap.classList.add("open");
@@ -1507,6 +1690,442 @@ const DivisiDropdown = {
       }
     });
 
+    // Listen to input on custom lainnya text input
+    if (this.lainnyaInput) {
+      this.lainnyaInput.addEventListener("input", () => {
+        if (this.hiddenInput && this.hiddenInput.value === "Lainnya") {
+          this.updateTriggerDisplay(this.lainnyaInput.value.trim() || "Lainnya", true);
+        }
+      });
+    }
+
+    // Option clicks & keyboard selection (single-select: closes dropdown on selection)
+    this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const val = opt.getAttribute("data-value");
+        this.setValue(val);
+        this.close();
+        this.trigger.focus();
+      });
+
+      opt.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          const val = opt.getAttribute("data-value");
+          this.setValue(val);
+          this.close();
+          this.trigger.focus();
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = opt.nextElementSibling;
+          if (next) next.focus();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const prev = opt.previousElementSibling;
+          if (prev) prev.focus();
+        } else if (e.key === "Escape") {
+          this.close();
+          this.trigger.focus();
+        } else if (e.key === "Tab") {
+          this.close();
+        }
+      });
+    });
+
+    // Close on outside click
+    document.addEventListener("click", (e) => {
+      if (this.isOpen && !this.wrap.contains(e.target) && (!this.lainnyaWrap || !this.lainnyaWrap.contains(e.target))) {
+        this.close();
+      }
+    });
+  },
+
+  open() {
+    if (typeof StatusDropdown !== "undefined" && StatusDropdown.isOpen) StatusDropdown.close();
+    if (typeof LokasiDropdown !== "undefined" && LokasiDropdown.isOpen) LokasiDropdown.close();
+    if (typeof UnitDropdown !== "undefined" && UnitDropdown.isOpen) UnitDropdown.close();
+    this.isOpen = true;
+    this.wrap.classList.add("open");
+    this.optionsList.classList.remove("hidden");
+    this.trigger.setAttribute("aria-expanded", "true");
+    this.trigger.classList.add("active");
+  },
+
+  close() {
+    this.isOpen = false;
+    this.wrap.classList.remove("open");
+    this.optionsList.classList.add("hidden");
+    this.trigger.setAttribute("aria-expanded", "false");
+    this.trigger.classList.remove("active");
+  },
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  },
+
+  updateTriggerDisplay(displayText, isCustom = false, info = null) {
+    if (!this.trigger) return;
+    const valWrap = this.trigger.querySelector(".custom-select-value");
+    if (!valWrap) return;
+
+    if (!displayText) {
+      valWrap.innerHTML = `<span class="divisi-placeholder" style="color: var(--text-muted);">Pilih Divisi Penanggung Jawab</span>`;
+      return;
+    }
+
+    if (isCustom) {
+      valWrap.innerHTML = `
+        <div class="divisi-selected-display">
+          <span class="divisi-option-icon icon-divisi-lainnya"><i class="fa-solid fa-ellipsis"></i></span>
+          <span class="divisi-name-text">${escapeHtml(displayText)}</span>
+        </div>
+      `;
+      return;
+    }
+
+    const key = info ? info.key : "bersama";
+    const icon = info ? info.icon : "fa-solid fa-people-group";
+    valWrap.innerHTML = `
+      <div class="divisi-selected-display">
+        <span class="divisi-option-icon icon-divisi-${key}"><i class="${icon}"></i></span>
+        <span class="divisi-name-text">${escapeHtml(displayText)}</span>
+      </div>
+    `;
+  },
+
+  setValue(val = "") {
+    if (!this.hiddenInput) return;
+    const cleanVal = (val || "").trim();
+
+    if (!cleanVal) {
+      this.hiddenInput.value = "";
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.value = "";
+        this.lainnyaInput.removeAttribute("required");
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          opt.classList.remove("selected");
+          opt.setAttribute("aria-selected", "false");
+        });
+      }
+      this.updateTriggerDisplay("");
+      return;
+    }
+
+    // Check fixed 5 options (Keislaman, Kepemimpinan, Media, Kewirausahaan, Bersama)
+    let fixed = null;
+    if (cleanVal.toLowerCase() === "bersama" || cleanVal.toLowerCase() === "bersama / proker bersama") {
+      fixed = DIVISI_OPTIONS.find(d => d.key === "bersama");
+    } else {
+      fixed = DIVISI_OPTIONS.find(d => d.name.toLowerCase() === cleanVal.toLowerCase() && d.key !== "lainnya");
+    }
+
+    if (fixed) {
+      // One of the fixed options
+      this.hiddenInput.value = fixed.name;
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.value = "";
+        this.lainnyaInput.removeAttribute("required");
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          const isMatch = opt.getAttribute("data-value") === fixed.name;
+          opt.classList.toggle("selected", isMatch);
+          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+        });
+      }
+      this.updateTriggerDisplay(fixed.name, false, fixed);
+    } else {
+      // Option "Lainnya" / Custom / Legacy comma-joined multi-divisi text
+      this.hiddenInput.value = "Lainnya";
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.remove("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.setAttribute("required", "required");
+        if (cleanVal !== "Lainnya") {
+          this.lainnyaInput.value = cleanVal;
+        }
+        setTimeout(() => {
+          if (cleanVal === "Lainnya") this.lainnyaInput.focus();
+        }, 100);
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          const isMatch = opt.getAttribute("data-value") === "Lainnya";
+          opt.classList.toggle("selected", isMatch);
+          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+        });
+      }
+      const displayText = (cleanVal !== "Lainnya" && cleanVal.length > 0) ? cleanVal : "Lainnya";
+      this.updateTriggerDisplay(displayText, true);
+    }
+  },
+
+  getValue() {
+    if (!this.hiddenInput) return "";
+    if (this.hiddenInput.value === "Lainnya") {
+      return this.lainnyaInput ? this.lainnyaInput.value.trim() : "";
+    }
+    return this.hiddenInput.value;
+  },
+
+  reset() {
+    this.setValue("");
+  }
+};
+
+// ==========================================================================
+// CUSTOM DROPDOWN CONTROLLER (LOKASI KEGIATAN)
+// ==========================================================================
+const LokasiDropdown = {
+  wrap: null,
+  trigger: null,
+  optionsList: null,
+  hiddenInput: null,
+  lainnyaWrap: null,
+  lainnyaInput: null,
+  isOpen: false,
+
+  FIXED_OPTIONS: [
+    { name: "Sekolah (SMKIT IBNUL QAYYIM MAKASSAR)", icon: "fa-solid fa-school", class: "icon-lokasi-sekolah" },
+    { name: "Masjid Pendidikan IQIS", icon: "fa-solid fa-mosque", class: "icon-lokasi-masjid" }
+  ],
+
+  init() {
+    this.wrap = document.getElementById("customLokasiDropdown");
+    this.trigger = document.getElementById("customLokasiTrigger");
+    this.optionsList = document.getElementById("customLokasiOptions");
+    this.hiddenInput = document.getElementById("eventLokasi");
+    this.lainnyaWrap = document.getElementById("lokasiLainnyaWrap");
+    this.lainnyaInput = document.getElementById("eventLokasiLainnya");
+
+    if (!this.wrap || !this.trigger || !this.optionsList || !this.hiddenInput) return;
+
+    // Toggle dropdown open/close on trigger click
+    this.trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggle();
+    });
+
+    // Keyboard support on trigger
+    this.trigger.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+        e.preventDefault();
+        this.open();
+        const firstOption = this.optionsList.querySelector(".custom-select-option");
+        if (firstOption) firstOption.focus();
+      }
+    });
+
+    // Option clicks & keyboard selection (single-select: closes dropdown on selection)
+    this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+      opt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const val = opt.getAttribute("data-value");
+        this.setValue(val);
+        this.close();
+        this.trigger.focus();
+      });
+
+      opt.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          const val = opt.getAttribute("data-value");
+          this.setValue(val);
+          this.close();
+          this.trigger.focus();
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = opt.nextElementSibling;
+          if (next) next.focus();
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          const prev = opt.previousElementSibling;
+          if (prev) prev.focus();
+        } else if (e.key === "Escape") {
+          this.close();
+          this.trigger.focus();
+        }
+      });
+    });
+
+    // Close on outside click
+    document.addEventListener("click", (e) => {
+      if (this.isOpen && !this.wrap.contains(e.target)) {
+        this.close();
+      }
+    });
+  },
+
+  open() {
+    if (typeof StatusDropdown !== "undefined" && StatusDropdown.isOpen) StatusDropdown.close();
+    if (typeof DivisiDropdown !== "undefined" && DivisiDropdown.isOpen) DivisiDropdown.close();
+    if (typeof UnitDropdown !== "undefined" && UnitDropdown.isOpen) UnitDropdown.close();
+    this.isOpen = true;
+    this.wrap.classList.add("open");
+    this.optionsList.classList.remove("hidden");
+    this.trigger.setAttribute("aria-expanded", "true");
+    this.trigger.classList.add("active");
+  },
+
+  close() {
+    this.isOpen = false;
+    this.wrap.classList.remove("open");
+    this.optionsList.classList.add("hidden");
+    this.trigger.setAttribute("aria-expanded", "false");
+    this.trigger.classList.remove("active");
+  },
+
+  toggle() {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
+  },
+
+  setValue(val = "") {
+    if (!this.hiddenInput) return;
+    const cleanVal = (val || "").trim();
+
+    if (!cleanVal) {
+      // Reset / Kosong
+      this.hiddenInput.value = "";
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.value = "";
+        this.lainnyaInput.removeAttribute("required");
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          opt.classList.remove("selected");
+          opt.setAttribute("aria-selected", "false");
+        });
+      }
+      if (this.trigger) {
+        const valWrap = this.trigger.querySelector(".custom-select-value");
+        if (valWrap) {
+          valWrap.innerHTML = `<span class="lokasi-placeholder" style="color: var(--text-muted);">Pilih Lokasi Kegiatan</span>`;
+        }
+      }
+      return;
+    }
+
+    const fixed = this.FIXED_OPTIONS.find(f => f.name.toLowerCase() === cleanVal.toLowerCase());
+    if (fixed) {
+      // Salah satu dari 2 opsi tetap
+      this.hiddenInput.value = fixed.name;
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.value = "";
+        this.lainnyaInput.removeAttribute("required");
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          const isMatch = opt.getAttribute("data-value") === fixed.name;
+          opt.classList.toggle("selected", isMatch);
+          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+        });
+      }
+      if (this.trigger) {
+        const valWrap = this.trigger.querySelector(".custom-select-value");
+        if (valWrap) {
+          valWrap.innerHTML = `
+            <div class="lokasi-selected-display">
+              <span class="lokasi-option-icon ${fixed.class}"><i class="${fixed.icon}"></i></span>
+              <span class="lokasi-name-text">${escapeHtml(fixed.name)}</span>
+            </div>
+          `;
+        }
+      }
+    } else {
+      // Opsi "Lainnya" / Lokasi Kustom Bebas (Termasuk data lama/legacy & multi-lokasi)
+      this.hiddenInput.value = "Lainnya";
+      if (this.lainnyaWrap) this.lainnyaWrap.classList.remove("hidden");
+      if (this.lainnyaInput) {
+        this.lainnyaInput.setAttribute("required", "required");
+        if (cleanVal !== "Lainnya") {
+          this.lainnyaInput.value = cleanVal;
+        }
+        setTimeout(() => {
+          if (cleanVal === "Lainnya") this.lainnyaInput.focus();
+        }, 100);
+      }
+      if (this.optionsList) {
+        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+          const isMatch = opt.getAttribute("data-value") === "Lainnya";
+          opt.classList.toggle("selected", isMatch);
+          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+        });
+      }
+      if (this.trigger) {
+        const valWrap = this.trigger.querySelector(".custom-select-value");
+        if (valWrap) {
+          valWrap.innerHTML = `
+            <div class="lokasi-selected-display">
+              <span class="lokasi-option-icon icon-lokasi-lainnya"><i class="fa-solid fa-location-dot"></i></span>
+              <span class="lokasi-name-text">${cleanVal !== "Lainnya" ? escapeHtml(cleanVal) : "Lainnya"}</span>
+            </div>
+          `;
+        }
+      }
+    }
+  },
+
+  getValue() {
+    if (!this.hiddenInput) return "";
+    if (this.hiddenInput.value === "Lainnya") {
+      return this.lainnyaInput ? this.lainnyaInput.value.trim() : "";
+    }
+    return this.hiddenInput.value;
+  },
+
+  reset() {
+    this.setValue("");
+  }
+};
+
+// ==========================================================================
+// CUSTOM DROPDOWN CONTROLLER (UNIT SATUAN)
+// ==========================================================================
+const UnitDropdown = {
+  wrap: null,
+  trigger: null,
+  optionsList: null,
+  hiddenInput: null,
+  isOpen: false,
+
+  init() {
+    this.wrap = document.getElementById("customUnitDropdown");
+    this.trigger = document.getElementById("customUnitTrigger");
+    this.optionsList = document.getElementById("customUnitOptions");
+    this.hiddenInput = document.getElementById("eventUnit");
+
+    if (!this.wrap || !this.trigger || !this.optionsList || !this.hiddenInput) return;
+
+    // Toggle dropdown open/close on trigger click
+    this.trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      this.toggle();
+    });
+
+    // Keyboard support on trigger
+    this.trigger.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " " || e.key === "ArrowDown") {
+        e.preventDefault();
+        this.open();
+        const firstOption = this.optionsList.querySelector(".custom-select-option");
+        if (firstOption) firstOption.focus();
+      }
+    });
+
     // Option clicks & keyboard selection
     this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
       opt.addEventListener("click", (e) => {
@@ -1548,9 +2167,9 @@ const DivisiDropdown = {
   },
 
   open() {
-    if (typeof StatusDropdown !== "undefined" && StatusDropdown.isOpen) {
-      StatusDropdown.close();
-    }
+    if (typeof StatusDropdown !== "undefined" && StatusDropdown.isOpen) StatusDropdown.close();
+    if (typeof DivisiDropdown !== "undefined" && DivisiDropdown.isOpen) DivisiDropdown.close();
+    if (typeof LokasiDropdown !== "undefined" && LokasiDropdown.isOpen) LokasiDropdown.close();
     this.isOpen = true;
     this.wrap.classList.add("open");
     this.optionsList.classList.remove("hidden");
@@ -1577,16 +2196,9 @@ const DivisiDropdown = {
   setValue(val = "") {
     if (!this.hiddenInput) return;
     const cleanVal = (val || "").trim();
-    const fixedOption = DIVISI_OPTIONS.find(d => d.name.toLowerCase() === cleanVal.toLowerCase() && d.key !== "lainnya");
 
     if (!cleanVal) {
-      // Reset / Kosong
       this.hiddenInput.value = "";
-      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
-      if (this.lainnyaInput) {
-        this.lainnyaInput.value = "";
-        this.lainnyaInput.removeAttribute("required");
-      }
       if (this.optionsList) {
         this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
           opt.classList.remove("selected");
@@ -1596,78 +2208,38 @@ const DivisiDropdown = {
       if (this.trigger) {
         const valWrap = this.trigger.querySelector(".custom-select-value");
         if (valWrap) {
-          valWrap.innerHTML = `<span class="divisi-placeholder" style="color: var(--text-muted);">Pilih Divisi Penanggung Jawab</span>`;
+          valWrap.innerHTML = `<span class="unit-placeholder" style="color: var(--text-muted);">Pilih Unit Satuan</span>`;
         }
       }
       return;
     }
 
-    if (fixedOption) {
-      // Salah satu dari 5 Divisi Tetap
-      this.hiddenInput.value = fixedOption.name;
-      if (this.lainnyaWrap) this.lainnyaWrap.classList.add("hidden");
-      if (this.lainnyaInput) {
-        this.lainnyaInput.value = "";
-        this.lainnyaInput.removeAttribute("required");
-      }
-      if (this.optionsList) {
-        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
-          const isMatch = opt.getAttribute("data-value") === fixedOption.name;
-          opt.classList.toggle("selected", isMatch);
-          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
-        });
-      }
-      if (this.trigger) {
-        const valWrap = this.trigger.querySelector(".custom-select-value");
-        if (valWrap) {
-          valWrap.innerHTML = `
-            <div class="divisi-selected-display">
-              <span class="divisi-option-icon icon-divisi-${fixedOption.key}"><i class="${fixedOption.icon}"></i></span>
-              <span class="divisi-name-text">${escapeHtml(fixedOption.name)}</span>
-            </div>
-          `;
-        }
-      }
-    } else {
-      // Opsi "Lainnya" / Divisi Kustom
-      this.hiddenInput.value = "Lainnya";
-      if (this.lainnyaWrap) this.lainnyaWrap.classList.remove("hidden");
-      if (this.lainnyaInput) {
-        this.lainnyaInput.setAttribute("required", "required");
-        if (cleanVal !== "Lainnya") {
-          this.lainnyaInput.value = cleanVal;
-        }
-        setTimeout(() => {
-          if (cleanVal === "Lainnya") this.lainnyaInput.focus();
-        }, 100);
-      }
-      if (this.optionsList) {
-        this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
-          const isMatch = opt.getAttribute("data-value") === "Lainnya";
-          opt.classList.toggle("selected", isMatch);
-          opt.setAttribute("aria-selected", isMatch ? "true" : "false");
-        });
-      }
-      if (this.trigger) {
-        const valWrap = this.trigger.querySelector(".custom-select-value");
-        if (valWrap) {
-          valWrap.innerHTML = `
-            <div class="divisi-selected-display">
-              <span class="divisi-option-icon icon-divisi-lainnya"><i class="fa-solid fa-ellipsis"></i></span>
-              <span class="divisi-name-text">${cleanVal !== "Lainnya" ? escapeHtml(cleanVal) : "Lainnya"}</span>
-            </div>
-          `;
-        }
+    const unitInfo = getUnitInfo(cleanVal);
+    this.hiddenInput.value = unitInfo.name;
+
+    if (this.optionsList) {
+      this.optionsList.querySelectorAll(".custom-select-option").forEach(opt => {
+        const isMatch = opt.getAttribute("data-value").toLowerCase() === unitInfo.name.toLowerCase();
+        opt.classList.toggle("selected", isMatch);
+        opt.setAttribute("aria-selected", isMatch ? "true" : "false");
+      });
+    }
+
+    if (this.trigger) {
+      const valWrap = this.trigger.querySelector(".custom-select-value");
+      if (valWrap) {
+        valWrap.innerHTML = `
+          <div class="unit-selected-display">
+            <span class="unit-option-icon icon-unit-${unitInfo.key}"><i class="${unitInfo.icon}"></i></span>
+            <span class="unit-name-text">${escapeHtml(unitInfo.name)}</span>
+          </div>
+        `;
       }
     }
   },
 
   getValue() {
-    if (!this.hiddenInput) return "";
-    if (this.hiddenInput.value === "Lainnya") {
-      return this.lainnyaInput ? this.lainnyaInput.value.trim() : "";
-    }
-    return this.hiddenInput.value;
+    return this.hiddenInput ? this.hiddenInput.value.trim() : "";
   },
 
   reset() {
@@ -2043,7 +2615,7 @@ const Modal = {
    */
   openAddModal(defaultDate = null) {
     if (!AuthState.isAdmin) {
-      Toast.show("Fitur ini memerlukan hak akses Administrator. Silakan masukkan PIN Admin.", "warning");
+      Toast.show("Fitur ini memerlukan hak akses Administrator. Silakan masukkan Password Admin.", "warning");
       AdminLoginModal.open();
       return;
     }
@@ -2059,9 +2631,17 @@ const Modal = {
     modalTitle.textContent = "Tambah Kegiatan Baru";
     formAlert.classList.add("hidden");
 
-    // Reset status & divisi custom dropdown
+    // Reset status, lokasi, unit, divisi custom dropdowns
     StatusDropdown.setValue("confirmed");
+    LokasiDropdown.reset();
     DivisiDropdown.reset();
+
+    // Default Unit selector based on admin role
+    if (AuthState.unit === "Ikhwan" || AuthState.unit === "Akhwat") {
+      UnitDropdown.setValue(AuthState.unit);
+    } else {
+      UnitDropdown.reset();
+    }
 
     PetugasInputManager.reset();
 
@@ -2084,7 +2664,7 @@ const Modal = {
    */
   openEditModal(id) {
     if (!AuthState.isAdmin) {
-      Toast.show("Fitur ini memerlukan hak akses Administrator. Silakan masukkan PIN Admin.", "warning");
+      Toast.show("Fitur ini memerlukan hak akses Administrator. Silakan masukkan Password Admin.", "warning");
       AdminLoginModal.open();
       return;
     }
@@ -2092,6 +2672,12 @@ const Modal = {
     const event = AppState.events.find(e => e.id === id);
     if (!event) {
       Toast.show("Data kegiatan tidak ditemukan", "error");
+      return;
+    }
+
+    // Periksa otorisasi unit
+    if (!canAdminManageUnit(event.unit)) {
+      Toast.show(`Akses ditolak: Anda login sebagai admin ${AuthState.unit} dan tidak dapat mengubah kegiatan unit ${event.unit}.`, "warning");
       return;
     }
 
@@ -2106,10 +2692,11 @@ const Modal = {
     document.getElementById("eventId").value = event.id;
     document.getElementById("eventJudul").value = event.judul || "";
     document.getElementById("eventDeskripsi").value = event.deskripsi || "";
-    document.getElementById("eventLokasi").value = event.lokasi || "";
 
-    // Set nilai custom dropdown & input divisi/petugas
+    // Set nilai custom dropdown & input divisi/petugas/lokasi/unit
     StatusDropdown.setValue(event.status || "confirmed");
+    LokasiDropdown.setValue(event.lokasi || "");
+    UnitDropdown.setValue(event.unit || "Bersama");
     DivisiDropdown.setValue(event.divisi || "");
 
     PetugasInputManager.setValues(event.petugas || "");
@@ -2137,6 +2724,8 @@ const Modal = {
     const modal = document.getElementById("eventModal");
     if (modal) modal.classList.add("hidden");
     StatusDropdown.close();
+    LokasiDropdown.close();
+    UnitDropdown.close();
     DivisiDropdown.close();
     this.unlockScroll();
   },
@@ -2146,13 +2735,18 @@ const Modal = {
    */
   openDeleteModal(id) {
     if (!AuthState.isAdmin) {
-      Toast.show("Fitur ini memerlukan hak akses Administrator. Silakan masukkan PIN Admin.", "warning");
+      Toast.show("Fitur ini memerlukan hak akses Administrator. Silakan masukkan Password Admin.", "warning");
       AdminLoginModal.open();
       return;
     }
 
     const event = AppState.events.find(e => e.id === id);
     if (!event) return;
+
+    if (!canAdminManageUnit(event.unit)) {
+      Toast.show(`Akses ditolak: Anda login sebagai admin ${AuthState.unit} dan tidak dapat menghapus kegiatan unit ${event.unit}.`, "warning");
+      return;
+    }
 
     AppState.eventToDelete = event;
 
@@ -2196,6 +2790,7 @@ async function loadEventsData(isSilent = false) {
     UI.renderSelectedDateAgenda();
     UI.renderUpcomingEvents();
     ProkerSuggestionsManager.updateDatalist();
+    UnitFilterManager.updateCounts();
 
     if (typeof EventDetailModal !== "undefined" && EventDetailModal.isOpen) {
       EventDetailModal.sync();
@@ -2233,7 +2828,16 @@ function validateEventForm(formData) {
   }
 
   if (!formData.lokasi || formData.lokasi.trim() === "") {
-    return "Lokasi kegiatan wajib diisi.";
+    return "Lokasi kegiatan wajib dipilih / diisi.";
+  }
+
+  if (!formData.unit || formData.unit.trim() === "") {
+    return "Unit Satuan wajib dipilih (Ikhwan / Akhwat / Bersama).";
+  }
+
+  // Validasi otorisasi unit
+  if (!canAdminManageUnit(formData.unit)) {
+    return `Akses ditolak: Anda login sebagai admin ${AuthState.unit} dan tidak dapat membuat/mengubah kegiatan unit ${formData.unit}.`;
   }
 
   if (!formData.divisi || formData.divisi.trim() === "") {
@@ -2277,6 +2881,14 @@ async function handleFormSubmit(e) {
   const statusEl = document.getElementById("eventStatus");
   const namaProkerKegiatan = document.getElementById("eventJudul").value.trim();
 
+  const selectedLokasi = (typeof LokasiDropdown !== "undefined" && typeof LokasiDropdown.getValue === "function")
+    ? LokasiDropdown.getValue()
+    : (document.getElementById("eventLokasi") ? document.getElementById("eventLokasi").value.trim() : "");
+
+  const selectedUnit = (typeof UnitDropdown !== "undefined" && typeof UnitDropdown.getValue === "function")
+    ? UnitDropdown.getValue()
+    : (document.getElementById("eventUnit") ? document.getElementById("eventUnit").value.trim() : "Bersama");
+
   const selectedDivisi = (typeof DivisiDropdown !== "undefined" && typeof DivisiDropdown.getValue === "function")
     ? DivisiDropdown.getValue()
     : (document.getElementById("eventDivisi") ? document.getElementById("eventDivisi").value.trim() : "");
@@ -2289,7 +2901,8 @@ async function handleFormSubmit(e) {
     id: id || undefined,
     judul: namaProkerKegiatan,
     deskripsi: document.getElementById("eventDeskripsi").value.trim(),
-    lokasi: document.getElementById("eventLokasi").value.trim(),
+    lokasi: selectedLokasi,
+    unit: selectedUnit,
     divisi: selectedDivisi,
     proker: namaProkerKegiatan,
     petugas: petugasValue,
@@ -2311,6 +2924,7 @@ async function handleFormSubmit(e) {
   if (validationError) {
     formAlertText.textContent = validationError;
     formAlert.classList.remove("hidden");
+    formAlert.scrollIntoView({ behavior: "smooth", block: "nearest" });
     return;
   }
 
@@ -2341,6 +2955,7 @@ async function handleFormSubmit(e) {
     console.error("Gagal menyimpan kegiatan:", error);
     formAlertText.textContent = error.message || "Terjadi kesalahan saat menyimpan kegiatan.";
     formAlert.classList.remove("hidden");
+    formAlert.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } finally {
     saveBtn.disabled = false;
     btnSpinner.classList.add("hidden");
@@ -2388,6 +3003,7 @@ const Auth = {
    */
   async init() {
     AuthState.isAdmin = false;
+    AuthState.unit = null;
     AuthState.token = null;
     AuthState.expiresAt = null;
 
@@ -2401,9 +3017,10 @@ const Auth = {
         // 1. Validasi waktu kedaluwarsa lokal
         if (sessionData && sessionData.token && sessionData.expiresAt && now < sessionData.expiresAt) {
           // 2. Verifikasi token ke Google Apps Script backend sebelum mempercayai sesi
-          const isValid = await ApiClient.verifySession(sessionData.token);
-          if (isValid) {
-            this.setAdmin(sessionData.token, sessionData.expiresAt, false);
+          const verified = await ApiClient.verifySession(sessionData.token);
+          if (verified) {
+            const resolvedUnit = (typeof verified === "object" && verified.unit) ? verified.unit : (sessionData.unit || "Ikhwan");
+            this.setAdmin(sessionData.token, sessionData.expiresAt, resolvedUnit, false);
             return;
           }
         }
@@ -2420,8 +3037,9 @@ const Auth = {
   /**
    * Mengatur status ke Mode Admin
    */
-  setAdmin(token, expiresAt, isNewLogin = false) {
+  setAdmin(token, expiresAt, unit = "Ikhwan", isNewLogin = false) {
     AuthState.isAdmin = true;
+    AuthState.unit = unit || "Ikhwan";
     AuthState.token = token;
     AuthState.expiresAt = expiresAt;
 
@@ -2429,14 +3047,15 @@ const Auth = {
     try {
       sessionStorage.setItem(AuthState.SESSION_KEY, JSON.stringify({
         token: token,
-        expiresAt: expiresAt
+        expiresAt: expiresAt,
+        unit: AuthState.unit
       }));
     } catch (e) {
       console.warn("Gagal menyimpan sesi ke sessionStorage:", e);
     }
 
     UI.updateAuthUI();
-    UI.renderSelectedDateAgenda(); // Render ulang kartu untuk memunculkan tombol Edit & Hapus
+    UI.renderSelectedDateAgenda(); // Render ulang kartu untuk memunculkan tombol Edit & Hapus sesuai otorisasi unit
     if (typeof EventDetailModal !== "undefined" && EventDetailModal.isOpen) {
       EventDetailModal.sync();
     }
@@ -2450,6 +3069,7 @@ const Auth = {
 
     // Kembalikan state lokal ke Mode Tamu
     AuthState.isAdmin = false;
+    AuthState.unit = null;
     AuthState.token = null;
     AuthState.expiresAt = null;
 
@@ -2489,7 +3109,7 @@ const Auth = {
     if (typeof EventDetailModal !== "undefined") {
       EventDetailModal.close();
     }
-    Toast.show("Sesi admin telah kedaluwarsa. Silakan login kembali dengan PIN Admin.", "error");
+    Toast.show("Sesi admin telah kedaluwarsa. Silakan login kembali dengan Password Admin.", "error");
   }
 };
 
@@ -2570,10 +3190,13 @@ const EventDetailModal = {
     const titleEl = document.getElementById("detailModalTitle");
     const statusBadgeEl = document.getElementById("detailStatusBadge");
     const divisiBadgeEl = document.getElementById("detailDivisiBadge");
+    const unitBadgeEl = document.getElementById("detailUnitBadge");
     const descEl = document.getElementById("detailDescription");
     const tanggalEl = document.getElementById("detailTanggal");
     const waktuEl = document.getElementById("detailWaktu");
     const lokasiEl = document.getElementById("detailLokasi");
+    const unitEl = document.getElementById("detailUnit");
+    const unitIconEl = document.getElementById("detailUnitIcon");
     const divisiEl = document.getElementById("detailDivisi");
     const divisiIconEl = document.getElementById("detailDivisiIcon");
 
@@ -2593,11 +3216,17 @@ const EventDetailModal = {
         : `<span class="status-badge status-badge-confirmed">Terkonfirmasi</span>`;
     }
 
+    // Unit Badge
+    const unitInfo = getUnitInfo(event.unit);
+    if (unitBadgeEl) {
+      unitBadgeEl.innerHTML = `<span class="unit-badge unit-badge-${unitInfo.key}"><i class="${unitInfo.icon}"></i> <span>${escapeHtml(unitInfo.name)}</span></span>`;
+    }
+
     // Divisi Info & Accent
     const divInfo = getDivisiInfo(event.divisi);
     if (divisiBadgeEl) {
-      if (event.divisi && divInfo) {
-        divisiBadgeEl.innerHTML = `<span class="divisi-badge divisi-${divInfo.key}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(event.divisi)}</span></span>`;
+      if (divInfo) {
+        divisiBadgeEl.innerHTML = `<span class="divisi-badge divisi-${divInfo.key}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(divInfo.name)}</span></span>`;
       } else {
         divisiBadgeEl.innerHTML = "";
       }
@@ -2606,7 +3235,9 @@ const EventDetailModal = {
     if (dialogEl) {
       // Remove previous border-divisi-* classes
       dialogEl.className = dialogEl.className.replace(/\bborder-divisi-\S+/g, "").trim();
-      if (divInfo && divInfo.key) {
+      dialogEl.classList.remove("multi-divisi-modal");
+      dialogEl.style.removeProperty("--multi-divisi-gradient-h");
+      if (divInfo) {
         dialogEl.classList.add(`border-divisi-${divInfo.key}`);
       }
     }
@@ -2620,6 +3251,14 @@ const EventDetailModal = {
         descEl.textContent = "Tidak ada deskripsi";
         descEl.classList.add("detail-empty-text");
       }
+    }
+
+    // Unit Satuan Row
+    if (unitEl) {
+      unitEl.textContent = event.unit || "Bersama";
+    }
+    if (unitIconEl && unitInfo) {
+      unitIconEl.className = unitInfo.icon || "fa-solid fa-people-group";
     }
 
     // Tanggal
@@ -2653,11 +3292,9 @@ const EventDetailModal = {
     if (divisiEl) {
       divisiEl.textContent = event.divisi || "-";
     }
-    if (divisiIconEl && divInfo) {
-      divisiIconEl.className = divInfo.icon || "fa-solid fa-layer-group";
+    if (divisiIconEl) {
+      divisiIconEl.className = divInfo ? (divInfo.icon || "fa-solid fa-layer-group") : "fa-solid fa-layer-group";
     }
-
-
 
     // Petugas Row
     if (petugasItemEl && petugasEl) {
@@ -2669,9 +3306,9 @@ const EventDetailModal = {
       }
     }
 
-    // Admin Action Buttons
+    // Admin Action Buttons (hanya jika admin berhak mengelola unit ini)
     if (adminActionsEl) {
-      if (AuthState.isAdmin) {
+      if (AuthState.isAdmin && canAdminManageUnit(event.unit)) {
         adminActionsEl.classList.remove("hidden");
       } else {
         adminActionsEl.classList.add("hidden");
@@ -2750,19 +3387,19 @@ const AdminLoginModal = {
     if (isPassword) {
       if (eyeIcon) eyeIcon.classList.add("hidden");
       if (eyeOffIcon) eyeOffIcon.classList.remove("hidden");
-      btn.title = "Sembunyikan PIN";
-      btn.setAttribute("aria-label", "Sembunyikan PIN");
+      btn.title = "Sembunyikan Password";
+      btn.setAttribute("aria-label", "Sembunyikan Password");
     } else {
       if (eyeIcon) eyeIcon.classList.remove("hidden");
       if (eyeOffIcon) eyeOffIcon.classList.add("hidden");
-      btn.title = "Lihat PIN";
-      btn.setAttribute("aria-label", "Lihat PIN");
+      btn.title = "Lihat Password";
+      btn.setAttribute("aria-label", "Lihat Password");
     }
   }
 };
 
 /**
- * Handle submit formulir PIN Admin
+ * Handle submit formulir Password Admin
  */
 async function handleAdminLoginSubmit(e) {
   e.preventDefault();
@@ -2776,9 +3413,9 @@ async function handleAdminLoginSubmit(e) {
 
   const pin = pinInput.value.trim();
 
-  // Validasi PIN lokal (6–8 digit angka)
-  if (!pin || pin.length < 6 || pin.length > 8 || !/^\d+$/.test(pin)) {
-    alertText.textContent = "PIN Admin harus berupa 6–8 digit angka.";
+  // Validasi Password lokal
+  if (!pin) {
+    alertText.textContent = "Password Admin tidak boleh kosong.";
     alertEl.classList.remove("hidden");
     pinInput.focus();
     return;
@@ -2794,13 +3431,13 @@ async function handleAdminLoginSubmit(e) {
 
     const result = await ApiClient.login(pin);
 
-    Toast.show(result.message || "Login admin berhasil! Anda dapat mengelola kegiatan.", "success");
-    Auth.setAdmin(result.token, result.expiresAt, true);
+    Toast.show(result.message || `Login Admin ${result.unit || ''} berhasil!`, "success");
+    Auth.setAdmin(result.token, result.expiresAt, result.unit, true);
     AdminLoginModal.close();
 
   } catch (error) {
     console.error("Gagal login admin:", error);
-    alertText.textContent = error.message || "PIN Admin salah. Silakan coba lagi.";
+    alertText.textContent = error.message || "Password Admin salah. Silakan coba lagi.";
     alertEl.classList.remove("hidden");
     pinInput.select();
   } finally {
@@ -2959,6 +3596,14 @@ function initializeEvents() {
       }
       if (typeof DivisiDropdown !== "undefined" && DivisiDropdown.isOpen) {
         DivisiDropdown.close();
+        return;
+      }
+      if (typeof LokasiDropdown !== "undefined" && LokasiDropdown.isOpen) {
+        LokasiDropdown.close();
+        return;
+      }
+      if (typeof UnitDropdown !== "undefined" && UnitDropdown.isOpen) {
+        UnitDropdown.close();
         return;
       }
       if (typeof EmailSubscribeModal !== "undefined") {
@@ -3616,8 +4261,23 @@ const ArchiveModal = {
 
     listContainer.innerHTML = "";
 
+    const filtered = (items || []).filter(it => matchesUnitFilter(it.unit, AppState.unitFilter));
+    this.updateStats(filtered);
+
+    const totalText = document.getElementById("archiveTotalText");
+    const emptyState = document.getElementById("archiveEmptyState");
+
+    if (filtered.length === 0) {
+      if (emptyState) emptyState.classList.remove("hidden");
+      if (totalText) totalText.textContent = `Total 0 kegiatan terarsip (${AppState.unitFilter || 'Semua'})`;
+      return;
+    }
+
+    if (emptyState) emptyState.classList.add("hidden");
+    if (totalText) totalText.textContent = `Total ${filtered.length} kegiatan terarsip (${AppState.unitFilter || 'Semua'})`;
+
     // Urutkan berdasarkan tanggal selesai terbaru
-    const sorted = [...items].sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       const dateA = (a.tanggal_selesai || a.tanggal_mulai || "") + " " + (a.jam_selesai || "00:00");
       const dateB = (b.tanggal_selesai || b.tanggal_mulai || "") + " " + (b.jam_selesai || "00:00");
       return dateB.localeCompare(dateA);
@@ -3628,11 +4288,13 @@ const ArchiveModal = {
       card.className = "archive-card";
       card.setAttribute("data-archive-id", item.id);
 
-      const divisiInfo = getDivisiInfo(item.divisi) || {
-        name: item.divisi || "Bersama / Proker Bersama",
-        key: "bersama",
-        icon: "fa-solid fa-people-group"
-      };
+      const divInfo = getDivisiInfo(item.divisi);
+      const divisiBadge = divInfo
+        ? `<span class="divisi-badge divisi-${divInfo.key}"><i class="${divInfo.icon}"></i> <span>${escapeHtml(divInfo.name)}</span></span>`
+        : `<span class="divisi-badge divisi-bersama"><i class="fa-solid fa-people-group"></i> <span>Bersama / Proker Bersama</span></span>`;
+
+      const unitInfo = getUnitInfo(item.unit);
+      const canManage = canAdminManageUnit(item.unit);
 
       const dateRangeStr = DateHelper.formatDateRange(item.tanggal_mulai, item.tanggal_selesai);
       const timeRangeStr = (item.jam_mulai && item.jam_selesai) ? `${item.jam_mulai} - ${item.jam_selesai} WITA` : "";
@@ -3653,10 +4315,11 @@ const ArchiveModal = {
       card.innerHTML = `
         <div class="archive-card-top">
           <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-            <span class="divisi-badge divisi-${divisiInfo.key}">
-              <i class="${divisiInfo.icon}"></i>
-              <span>${escapeHtml(divisiInfo.name)}</span>
+            <span class="unit-badge unit-badge-${unitInfo.key}">
+              <i class="${unitInfo.icon}"></i>
+              <span>${escapeHtml(unitInfo.name)}</span>
             </span>
+            ${divisiBadge}
             <span class="archive-status-badge ${badgeClass}" data-role="status-badge">
               <i class="${badgeIcon}"></i>
               <span class="status-badge-text">${escapeHtml(currentStatus)}</span>
@@ -3710,6 +4373,12 @@ const ArchiveModal = {
 
         <!-- Form Evaluasi Vertikal (Clean Stacked Form) -->
         <div class="archive-eval-section">
+          ${!canManage ? `
+            <div class="unit-auth-notice" style="padding: 0.625rem 0.875rem; background: var(--bg-subtle); border-radius: var(--radius-md); font-size: 0.8125rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <i class="fa-solid fa-lock" style="color: var(--text-muted);"></i>
+              <span>Evaluasi hanya dapat diubah oleh Admin ${escapeHtml(item.unit || "Unit terkait")}.</span>
+            </div>
+          ` : `
           <div class="form-group" style="margin-bottom: 0.875rem;">
             <label class="form-label" style="font-size: 0.8125rem; margin-bottom: 0.35rem;">Status Pelaksanaan</label>
             <div class="custom-select-wrap archive-custom-select">
@@ -3756,10 +4425,13 @@ const ArchiveModal = {
               <span class="btn-spinner hidden"></span>
             </button>
           </div>
+          `}
         </div>
       `;
 
-      this.attachCardEvents(card, item);
+      if (canManage) {
+        this.attachCardEvents(card, item);
+      }
       listContainer.appendChild(card);
     });
   },
@@ -4112,8 +4784,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // Inisialisasi controller navbar, tema, form controls & modal
   NavbarManager.init();
   ThemeManager.init();
+  UnitFilterManager.init();
   StatusDropdown.init();
   DivisiDropdown.init();
+  LokasiDropdown.init();
+  UnitDropdown.init();
   PetugasInputManager.init();
   ProkerSuggestionsManager.updateDatalist();
   NotificationManager.init();
